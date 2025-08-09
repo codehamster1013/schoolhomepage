@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서울명덕초등학교</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: '맑은 고딕', sans-serif; background: #f4f7f6; color: #333; line-height: 1.6; }
+        .container { max-width: 1000px; margin: 20px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 20px; border-bottom: 1px solid #eee; margin-bottom: 30px; }
+        .header-left { display: flex; align-items: center; }
+        .logo { width: 60px; height: 60px; border-radius: 50%; overflow: hidden; margin-right: 15px; border: 3px solid #62C18F; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .logo img { width: 100%; height: 100%; object-fit: cover; }
+        .school-name { font-size: 28px; font-weight: bold; color: #333; text-shadow: 1px 1px 2px rgba(0,0,0,0.05); }
+        .nav { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; justify-content: flex-start; }
+        .btn { padding: 10px 20px; border: none; border-radius: 25px; cursor: pointer; font-size: 15px; font-weight: bold; transition: all 0.3s ease; }
+        .btn-primary { background: #62C18F; color: white; box-shadow: 0 4px 8px rgba(98, 193, 143, 0.3); }
+        .btn-primary:hover { background: #4CAF80; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(98, 193, 143, 0.4); }
+        .btn-secondary { background: #e0e0e0; color: #555; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-secondary:hover { background: #d0d0d0; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .btn-danger { background: #ff4444; color: white; }
+        .btn-danger:hover { background: #cc0000; transform: translateY(-2px); }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 40px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); text-align: center; position: relative; }
+        .modal h2 { margin-bottom: 25px; color: #333; font-size: 26px; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; font-size: 15px; }
+        input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
+        input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus { border-color: #62C18F; outline: none; box-shadow: 0 0 0 3px rgba(98, 193, 143, 0.2); }
+        textarea { resize: vertical; min-height: 80px; }
+        .close { position: absolute; top: 15px; right: 20px; font-size: 32px; color: #aaa; cursor: pointer; transition: color 0.3s; }
+        .close:hover { color: #555; }
+
+        .section-card { background: #ffffff; padding: 30px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
+        .section-card h3 { font-size: 22px; color: #333; margin-bottom: 20px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+        
+        .comment-section { margin-top: 40px; }
+        .comment { background: #f9f9f9; padding: 15px 20px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #eee; transition: all 0.3s ease; }
+        .comment:hover { background: #f5f5f5; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .comment-author { font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; color: #444; font-size: 15px; }
+        .profile { width: 34px; height: 34px; background: #62C18F; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: bold; margin-right: 12px; flex-shrink: 0; }
+        .comment-text { font-size: 16px; color: #333; word-wrap: break-word; }
+        .comment-meta { font-size: 12px; color: #888; margin-top: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .comment-meta button { background: none; border: none; color: #ff6666; font-size: 12px; cursor: pointer; padding: 0 5px; transition: color 0.3s; }
+        .comment-meta button:hover { color: #cc0000; }
+        .comment-options { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+
+        .vote-section { margin: 30px 0; padding: 30px; border: 1px solid #62C18F; border-radius: 12px; background: #e6f6ee; }
+        .vote-section h3 { color: #2e7d32; }
+        .vote-option { margin: 15px 0; display: flex; align-items: center; }
+        .vote-option label { cursor: pointer; display: flex; align-items: center; font-size: 17px; color: #333; }
+        .vote-option input[type="radio"] { margin-right: 12px; width: 20px; height: 20px; accent-color: #62C18F; }
+        .vote-section .btn { width: 100%; margin-top: 25px; }
+
+        .vote-result { margin-top: 30px; padding-top: 20px; border-top: 1px dashed #b0d8c7; }
+        .results-summary { background: #f0fdf7; padding: 20px; border-radius: 10px; margin-bottom: 25px; border: 1px solid #d0f0e0; }
+        .results-summary h4 { color: #2e7d32; margin-bottom: 15px; font-size: 18px; }
+        .results-summary p { margin-bottom: 8px; font-size: 15px; }
+        .results-summary p strong { color: #1e5a21; }
+
+        .chart-toggle { text-align: center; margin-bottom: 25px; }
+        .chart-toggle .btn { margin: 0 5px; padding: 8px 20px; border-radius: 20px; font-size: 14px; }
+        .active-chart { background: #62C18F !important; color: white !important; box-shadow: 0 4px 8px rgba(98, 193, 143, 0.4); }
+
+        .bar-item { margin-bottom: 20px; }
+        .bar-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 15px; color: #444; }
+        .bar-container { background: #e9ecef; height: 30px; border-radius: 15px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 15px; background: #62C18F; transition: width 1s ease-out; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; color: white; font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; }
+        .bar-fill span { margin-left: auto; padding-left: 5px; }
+        .chart-canvas { max-width: 400px; max-height: 400px; margin: 0 auto; }
+        .chart-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; }
+
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="loginModal" class="modal" style="display: flex;">
+        <div class="modal-content">
+            <h2>환영합니다!</h2>
+            <p style="margin-bottom: 20px; color: #666;">서울명덕초등학교 홈페이지에 로그인해주세요.</p>
+            <div class="form-group">
+                <label for="grade">학년:</label>
+                <select id="grade">
+                    <option value="">학년 선택</option>
+                    <option value="1">1학년</option>
+                    <option value="2">2학년</option>
+                    <option value="3">3학년</option>
+                    <option value="4">4학년</option>
+                    <option value="5">5학년</option>
+                    <option value="6">6학년</option>
+                    <option value="--">관리자</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="class">반:</label>
+                <select id="class">
+                    <option value="">반 선택</option>
+                    <option value="1">1반</option>
+                    <option value="2">2반</option>
+                    <option value="3">3반</option>
+                    <option value="4">4반</option>
+                    <option value="5">5반</option>
+                    <option value="6">6반</option>
+                    <option value="7">7반</option>
+                    <option value="8">8반</option>
+                    <option value="9">9반</option>
+                    <option value="10">10반</option>
+                    <option value="11">11반</option>
+                    <option value="--">관리자</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="lastName">성:</label>
+                <input type="text" id="lastName" placeholder="예: 김" required>
+            </div>
+            <div class="form-group">
+                <label for="firstName">이름:</label>
+                <input type="text" id="firstName" placeholder="예: 명덕" required>
+            </div>
+            <button class="btn btn-primary" onclick="login()">입장하기</button>
+        </div>
+    </div>
+
+    <div id="mainPage" class="hidden">
+        <div class="container">
+            <div class="header">
+                <div class="header-left">
+                    <div class="logo">
+                        <img src="https://myungduk.sen.es.kr/dggb/module/file/selectImageView.do?atchFileId=276396&fileSn=0" alt="서울명덕초등학교 로고">
+                    </div>
+                    <div class="school-name">서울명덕초등학교</div>
+                </div>
+                <button class="btn btn-secondary" onclick="logout()">로그아웃</button>
+            </div>
+
+            <div id="hostButtons" class="nav hidden">
+                <button class="btn btn-primary" onclick="createVote('meal')">급식투표 생성</button>
+                <button class="btn btn-primary" onclick="createVote('music')">음악투표 생성</button>
+                <button class="btn btn-primary" onclick="editNews()">학교 소식 편집</button>
+                <button class="btn btn-danger" onclick="deleteVote()">현재 투표 삭제</button>
+            </div>
+
+            <div class="section-card news-section">
+                <h3>🏫 학교 소식</h3>
+                <div id="newsContent"></div>
+            </div>
+
+            <div id="voteSection" class="vote-section hidden">
+                <h3 id="voteTitle"></h3>
+                <div id="voteContent"></div>
+                <div id="voteResults" class="vote-result hidden">
+                    <div class="results-summary">
+                        <h4>📊 투표 결과 요약</h4>
+                        <div id="voteSummary"></div>
+                    </div>
+                    <div class="chart-toggle">
+                        <button class="btn btn-secondary active-chart" id="barBtn" onclick="showChart('bar')">막대 그래프 보기</button>
+                        <button class="btn btn-secondary" id="pieBtn" onclick="showChart('pie')">원형 그래프 보기</button>
+                    </div>
+                    <div id="barChart"><div id="barContent"></div></div>
+                    <div id="pieChart" class="chart-container hidden">
+                        <canvas id="voteChart" class="chart-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card comment-section">
+                <h3>💬 건의함</h3>
+                <div class="form-group">
+                    <textarea id="commentText" placeholder="학교에 건의하고 싶은 내용을 입력해주세요." rows="4"></textarea>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; font-weight: normal; margin-bottom: 0;">
+                        <input type="checkbox" id="privateComment" style="width: auto; margin-right: 8px;"> 비공개 댓글
+                    </label>
+                    <button class="btn btn-primary" onclick="addComment()">댓글 작성</button>
+                </div>
+                <div id="comments"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="voteModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="hideModal()">&times;</span>
+            <h2 id="voteModalTitle">투표 생성</h2>
+            <div class="form-group">
+                <label for="voteTitle2">투표 제목:</label>
+                <input type="text" id="voteTitle2" placeholder="예: 이번 주 급식 메뉴 투표">
+            </div>
+            <div class="form-group">
+                <label for="voteOptions">투표 선택지 (각 줄에 하나씩 입력):</label>
+                <textarea id="voteOptions" rows="6" placeholder="선택지 1&#10;선택지 2&#10;선택지 3"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="voteDays">투표 기간 (일):</label>
+                <input type="number" id="voteDays" value="7" min="1">
+            </div>
+            <button class="btn btn-primary" onclick="startVote()">투표 시작</button>
+        </div>
+    </div>
+
+    <script>
+        // Data storage using sessionStorage for simplicity
+        let users = JSON.parse(sessionStorage.getItem('users') || '[]');
+        let currentUser = null;
+        let comments = JSON.parse(sessionStorage.getItem('comments') || '[]');
+        let currentVote = JSON.parse(sessionStorage.getItem('currentVote') || 'null');
+        let news = sessionStorage.getItem('news') || '안녕하세요! 서울명덕초등학교 홈페이지입니다.';
+        let currentVoteType = ''; // 'meal' or 'music'
+        let voteChart = null; // Chart.js instance
+        const colors = ['#62C18F', '#FFD700', '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#A3C8B7', '#8B0000'];
+
+        // Add the host user if not already present
+        if (!users.find(u => u.lastName === '서울' && u.firstName === '명덕초등학교')) {
+            users.push({ grade: '--', class: '--', lastName: '서울', firstName: '명덕초등학교', isHost: true });
+            sessionStorage.setItem('users', JSON.stringify(users));
+        }
+
+        // --- Login/Logout Functions ---
+        function login() {
+            const grade = document.getElementById('grade').value;
+            const cls = document.getElementById('class').value;
+            const lastName = document.getElementById('lastName').value.trim();
+            const firstName = document.getElementById('firstName').value.trim();
+
+            if (!grade || !cls || !lastName || !firstName) {
+                alert('모든 정보를 입력해주세요.');
+                return;
+            }
+
+            let user = users.find(u => u.grade === grade && u.class === cls && u.lastName === lastName && u.firstName === firstName);
+
+            if (!user) {
+                user = { grade, class: cls, lastName, firstName, isHost: false };
+                users.push(user);
+                sessionStorage.setItem('users', JSON.stringify(users));
+            }
+
+            currentUser = user;
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser)); // Store current user in session
+
+            document.getElementById('loginModal').style.display = 'none';
+            document.getElementById('mainPage').classList.remove('hidden');
+
+            if (user.isHost) {
+                document.getElementById('hostButtons').classList.remove('hidden');
+            } else {
+                document.getElementById('hostButtons').classList.add('hidden');
+            }
+            loadContent();
+        }
+
+        function logout() {
+            currentUser = null;
+            sessionStorage.removeItem('currentUser');
+            document.getElementById('loginModal').style.display = 'flex'; // Use flex for centering
+            document.getElementById('mainPage').classList.add('hidden');
+            document.getElementById('hostButtons').classList.add('hidden');
+        }
+
+        // Check for existing login on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const storedUser = sessionStorage.getItem('currentUser');
+            if (storedUser) {
+                currentUser = JSON.parse(storedUser);
+                document.getElementById('loginModal').style.display = 'none';
+                document.getElementById('mainPage').classList.remove('hidden');
+                if (currentUser.isHost) {
+                    document.getElementById('hostButtons').classList.remove('hidden');
+                }
+                loadContent();
+            }
+        });
+
+        // --- General Content Loading ---
+        function loadContent() {
+            document.getElementById('newsContent').innerHTML = news;
+            loadComments();
+            loadVote();
+        }
+
+        // --- Comment Section Functions ---
+        function addComment() {
+            const text = document.getElementById('commentText').value;
+            if (!text.trim()) {
+                alert('댓글 내용을 입력해주세요.');
+                return;
+            }
+
+            // Basic profanity filter
+            const forbiddenWords = ['씨발', '씨발년', '씨발놈', '씨벌', '씨부랄', '씨부랄년', '씨벌년','지랄','fuck','mother','shut', '씨벌놈', '씨벌새끼', '씨발련', '좆', '좆같다', '좆나', '좆됐다', '좆망', '좆밥', '좆까', '좆돼지', '좆된', '좆망신', '좆됐다', '개새끼', '개새', '개자식', '개자식년', '개년', '개새끼야', '개새끼들', '개년놈', '개놈', '병신', '병신년', '병신새끼', '미친놈', '미친새끼', '미친년', '미친색기', '미친새', '씹새끼', '씹년', '씹창', '씹돼지', '씹탱', '씹탱이', '씹덕', '씹물', '씹치', '씹쌔끼', '씹새', '닥쳐', '닥쳐라', '꺼져', '꺼져라', '엿같다', '엿먹어', '엿먹어라', '똥', '똥개', '똥멍청이', '썅놈', '썅년', '썅새끼', '썅', '개새끼년', '씨벌새끼', '씨발년들', '씨발놈들', '병신놈', '병신년놈', '느금마', '느금', '느금마새끼', '느금마년', '느금마놈', '느금마년놈', '꺼져버려', 'ㅅㅂ', 'ㅈ같다', 'ㅈㄹ', 'ㅈㄹ하다', 'ㅄ', 'ㅄ같다', 'ㅄ새끼', 'ㅄ년', 'ㅄ놈', 'ㅄ같은', 'ㅂㅅ', 'ㅂㅅ새끼', 'ㅂㅅ같다', '병신새끼', '좆밥새끼', '좆망신', '좆됐어', '좆까라', '좆창', '좆나게', '좆같은년', '좆같은새끼', '씹밥', '씹창년', '씹물년', '씹덕년', '씹탱년', '씹치년', '씹쌔끼년', '씹새끼년', '개같다', '개같은년', '개같은놈', '개병신', '개병신년', '개병신새끼', '개좆', '개좆같다', '개좆밥', '개좆망', '개좆망신', '개좆됐다', '개좆까라', '개좆창', '개좆나', '뻐큐', '뻐큐년', '뻐큐놈', '뻐큐새끼', '뻐큐년놈', '뻐큐년새끼', '병쉰', '씹선비', '씹노답', '씹덕후', '병신년놈', '새끼', '새끼야', '새끼들', '새끼년', '새끼놈', '새끼같은', '병신같은', '뒤져', '뒤져라', '뒤져버려', '뒤져죽어', '죽어', '죽어라', '죽어버려', '망할', '망할놈', '병신새끼들', '개새끼들', '좆같은새끼들', '좆같은년들', '좆같은놈들', '씹새끼들', '씹년들', 'ㄱㅅㄲ', 'ㅆㅂ', 'ㅈㄹㅈㄹ', 'ㅈㄹㄴ', 'ㅂㅅㄲ', 'ㅅㅂㄲ', 'ㅅㅂㄴ', 'ㅆㅂㄴ', 'ㅂㅅㄴ', '버러지', '벌레', '뒤진놈', '뒤진년', '뒤진새끼', '뒤진년놈', '뒤진놈새끼', '밥먹고 뒤져', '뒤져버려라', '뒤져라 씨발', '뒤져라 병신', '뒤져라 좆같은놈', '밥처먹고 뒤져', '쓰레기', '쓰레기새끼'];
+            for (let word of forbiddenWords) {
+                if (text.includes(word)) {
+                    alert('부적절한 내용이 포함되어 있습니다.');
+                    return;
+                }
+            }
+
+            const comment = {
+                id: Date.now(),
+                author: currentUser.firstName,
+                profile: currentUser.firstName[0] || '?',
+                text: text,
+                private: document.getElementById('privateComment').checked,
+                timestamp: new Date().toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+            };
+            comments.push(comment);
+            sessionStorage.setItem('comments', JSON.stringify(comments));
+            document.getElementById('commentText').value = '';
+            document.getElementById('privateComment').checked = false;
+            loadComments();
+        }
+
+        function loadComments() {
+            const container = document.getElementById('comments');
+            container.innerHTML = '';
+            comments.sort((a, b) => b.id - a.id); // Show newest comments first
+
+            comments.forEach(comment => {
+                // Only show private comments to host or the author
+                if (comment.private && !currentUser.isHost && comment.author !== currentUser.firstName) {
+                    return;
+                }
+
+                const div = document.createElement('div');
+                div.className = 'comment';
+                div.innerHTML = `
+                    <div class="comment-author">
+                        <span class="profile">${comment.profile}</span>
+                        ${comment.author}
+                        ${comment.private ? '<span style="color:#888; font-weight:normal; margin-left: 5px;">(비공개)</span>' : ''}
+                    </div>
+                    <div class="comment-text">${comment.text}</div>
+                    <div class="comment-meta">
+                        <small>${comment.timestamp}</small>
+                        ${currentUser.isHost ? `<button onclick="deleteComment(${comment.id})">삭제</button>` : ''}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteComment(id) {
+            if (!currentUser.isHost) {
+                alert('댓글은 관리자만 삭제할 수 있습니다.');
+                return;
+            }
+            if (confirm('이 댓글을 정말 삭제하시겠습니까?')) {
+                comments = comments.filter(c => c.id !== id);
+                sessionStorage.setItem('comments', JSON.stringify(comments));
+                loadComments();
+            }
+        }
+
+        // --- Vote Section Functions ---
+        function createVote(type) {
+            if (!currentUser.isHost) {
+                alert('투표는 관리자만 생성할 수 있습니다.');
+                return;
+            }
+            currentVoteType = type;
+            document.getElementById('voteModalTitle').textContent = type === 'meal' ? '급식 투표 생성' : '음악 투표 생성';
+            document.getElementById('voteModal').style.display = 'flex'; // Use flex for centering
+            document.getElementById('voteTitle2').value = '';
+            document.getElementById('voteOptions').value = '';
+            document.getElementById('voteDays').value = 7;
+        }
+
+        function hideModal() {
+            document.getElementById('voteModal').style.display = 'none';
+        }
+
+        function startVote() {
+            const title = document.getElementById('voteTitle2').value.trim();
+            const optionsText = document.getElementById('voteOptions').value.trim();
+            const days = parseInt(document.getElementById('voteDays').value);
+
+            if (!title || !optionsText) {
+                alert('투표 제목과 선택지를 모두 입력해주세요.');
+                return;
+            }
+            if (isNaN(days) || days < 1) {
+                alert('유효한 투표 기간(일)을 입력해주세요.');
+                return;
+            }
+
+            const options = optionsText.split('\n').filter(o => o.trim()).map(o => o.trim());
+            if (options.length < 2) {
+                alert('최소 2개 이상의 선택지를 입력해주세요.');
+                return;
+            }
+
+            const endTime = new Date();
+            endTime.setDate(endTime.getDate() + days);
+
+            currentVote = {
+                type: currentVoteType,
+                title: title,
+                options: options.map(o => ({ text: o, votes: 0 })),
+                endTime: endTime.getTime(),
+                voters: [], // Store user identifiers who have voted
+                resultsPublished: false // New flag to track if results have been published to news
+            };
+            sessionStorage.setItem('currentVote', JSON.stringify(currentVote));
+            document.getElementById('voteModal').style.display = 'none';
+            alert('새로운 투표가 시작되었습니다!');
+            loadVote();
+        }
+
+        function loadVote() {
+            if (!currentVote) {
+                document.getElementById('voteSection').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('voteSection').classList.remove('hidden');
+            document.getElementById('voteTitle').textContent = currentVote.title;
+            const container = document.getElementById('voteContent');
+            container.innerHTML = '';
+            document.getElementById('voteResults').classList.add('hidden'); // Hide results until needed
+
+            const hasVoted = currentVote.voters.includes(currentUser.lastName + currentUser.firstName);
+            const voteEnded = new Date().getTime() > currentVote.endTime;
+
+            if (voteEnded) {
+                showVoteResults();
+                return;
+            }
+
+            currentVote.options.forEach((option, index) => {
+                const div = document.createElement('div');
+                div.className = 'vote-option';
+                div.innerHTML = `
+                    <label>
+                        <input type="radio" name="vote" value="${index}" ${hasVoted ? 'disabled' : ''}>
+                        ${option.text}
+                    </label>
+                `;
+                container.appendChild(div);
+            });
+
+            if (!hasVoted) {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-primary';
+                btn.textContent = '투표하기';
+                btn.onclick = submitVote;
+                container.appendChild(btn);
+            } else {
+                container.innerHTML += `<p class="text-center" style="margin-top:20px; color:#555;">이미 투표에 참여하셨습니다.</p>`;
+            }
+            
+            container.innerHTML += `<p class="text-center" style="margin-top:20px; color:#777;"><small>마감: ${new Date(currentVote.endTime).toLocaleString('ko-KR')}</small></p>`;
+        }
+
+        function submitVote() {
+            const selected = document.querySelector('input[name="vote"]:checked');
+            if (!selected) {
+                alert('투표할 항목을 선택해주세요.');
+                return;
+            }
+
+            if (currentVote.voters.includes(currentUser.lastName + currentUser.firstName)) {
+                alert('이미 투표에 참여하셨습니다.');
+                return;
+            }
+
+            currentVote.options[parseInt(selected.value)].votes++;
+            currentVote.voters.push(currentUser.lastName + currentUser.firstName); // Use full name for unique identifier
+            sessionStorage.setItem('currentVote', JSON.stringify(currentVote));
+            alert('투표가 완료되었습니다!');
+            loadVote(); // Reload to show disabled options
+        }
+
+        function showVoteResults() {
+            if (!currentVote) return; // Ensure currentVote exists
+
+            document.getElementById('voteContent').classList.add('hidden');
+            document.getElementById('voteResults').classList.remove('hidden');
+
+            const totalVotes = currentVote.options.reduce((sum, opt) => sum + opt.votes, 0);
+            const sortedOptions = [...currentVote.options].sort((a, b) => b.votes - a.votes);
+            const winner = sortedOptions[0];
+
+            document.getElementById('voteSummary').innerHTML = `
+                <p><strong>총 투표 수:</strong> ${totalVotes}표</p>
+                <p><strong>참여한 학생 수:</strong> ${currentVote.voters.length}명</p>
+                <p><strong>🏆 1위:</strong> ${winner.text} (${winner.votes}표)</p>
+            `;
+            
+            // Only update news if results haven't been published yet
+            if (!currentVote.resultsPublished) {
+                news = `📊 ${currentVote.title} 결과 발표!\n🏆 1위: ${winner.text} (${winner.votes}표)\n총 ${totalVotes}표 투표\n\n${news}`;
+                sessionStorage.setItem('news', news);
+                document.getElementById('newsContent').innerHTML = news;
+                currentVote.resultsPublished = true; // Mark as published
+                sessionStorage.setItem('currentVote', JSON.stringify(currentVote)); // Save the updated vote status
+            }
+
+            createBarChart();
+            createPieChart();
+            showChart('bar'); // Default to bar chart when results are shown
+        }
+
+        function createBarChart() {
+            const container = document.getElementById('barContent');
+            container.innerHTML = '';
+            const total = currentVote.options.reduce((sum, opt) => sum + opt.votes, 0);
+            
+            // Sort options for bar chart to show highest first
+            const sortedOptions = [...currentVote.options].sort((a, b) => b.votes - a.votes);
+
+            sortedOptions.forEach((option, index) => {
+                const percentage = total > 0 ? (option.votes / total) * 100 : 0;
+                const div = document.createElement('div');
+                div.className = 'bar-item';
+                div.innerHTML = `
+                    <div class="bar-label">
+                        <span><strong>${option.text}</strong></span>
+                        <span>${option.votes}표 (${percentage.toFixed(1)}%)</span>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-fill" style="background: ${colors[index % colors.length]}; width: ${percentage}%;">
+                            ${percentage > 5 ? `${percentage.toFixed(1)}%` : ''}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function createPieChart() {
+            const ctx = document.getElementById('voteChart').getContext('2d');
+            if (voteChart) voteChart.destroy(); // Destroy previous chart instance
+
+            const labels = currentVote.options.map(o => o.text);
+            const data = currentVote.options.map(o => o.votes);
+            const total = data.reduce((sum, votes) => sum + votes, 0);
+
+            voteChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                font: { size: 13 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const percentage = total > 0 ? (context.parsed / total) * 100 : 0;
+                                    return `${context.label}: ${context.parsed}표 (${percentage.toFixed(1)}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function showChart(type) {
+            document.getElementById('barBtn').classList.remove('active-chart');
+            document.getElementById('pieBtn').classList.remove('active-chart');
+            if (type === 'bar') {
+                document.getElementById('barChart').classList.remove('hidden');
+                document.getElementById('pieChart').classList.add('hidden');
+                document.getElementById('barBtn').classList.add('active-chart');
+            } else {
+                document.getElementById('barChart').classList.add('hidden');
+                document.getElementById('pieChart').classList.remove('hidden');
+                document.getElementById('pieBtn').classList.add('active-chart');
+            }
+        }
+
+        // --- News Editing ---
+        function editNews() {
+            if (!currentUser.isHost) {
+                alert('학교 소식은 관리자만 편집할 수 있습니다.');
+                return;
+            }
+            const newNews = prompt('새로운 학교 소식을 입력해주세요:', news);
+            if (newNews !== null) { // Check if user clicked cancel
+                news = newNews;
+                sessionStorage.setItem('news', news);
+                document.getElementById('newsContent').innerHTML = news;
+                alert('학교 소식이 업데이트되었습니다.');
+            }
+        }
+
+        // --- Delete Vote ---
+        function deleteVote() {
+            if (!currentUser.isHost) {
+                alert('투표는 관리자만 삭제할 수 있습니다.');
+                return;
+            }
+            if (!currentVote) {
+                alert('현재 진행 중인 투표가 없습니다.');
+                return;
+            }
+            if (confirm('현재 진행 중인 투표를 정말 삭제하시겠습니까? 투표 결과도 함께 사라집니다.')) {
+                currentVote = null;
+                sessionStorage.removeItem('currentVote');
+                document.getElementById('voteSection').classList.add('hidden');
+                alert('투표가 성공적으로 삭제되었습니다.');
+                // Optionally clear the last vote result from news if it was just published
+                loadContent(); // Refresh overall content
+            }
+        }
+
+        // Polling to check vote end time every minute
+        setInterval(() => {
+            if (currentVote && new Date().getTime() > currentVote.endTime) {
+                showVoteResults();
+            }
+        }, 60000); // Check every minute
+    </script>
+</body>
+</html>
