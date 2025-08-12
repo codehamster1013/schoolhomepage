@@ -10,6 +10,7 @@
     <!-- Gun.js CDN for real-time data synchronization -->
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <style>
+        /* 기존 CSS 스타일은 변경 없이 유지 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: '맑은 고딕', sans-serif; background: #f4f7f6; color: #333; line-height: 1.6; }
         .container { max-width: 1000px; margin: 20px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
@@ -51,658 +52,367 @@
         .comment-meta button { background: none; border: none; color: #ff6666; font-size: 12px; cursor: pointer; padding: 0 5px; transition: color 0.3s; }
         .comment-meta button:hover { color: #cc0000; }
         .comment-options { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
-
-        .vote-section { margin: 30px 0; padding: 30px; border: 1px solid #62C18F; border-radius: 12px; background: #e6f6ee; }
-        .vote-section h3 { color: #2e7d32; }
-        .vote-option { margin: 15px 0; display: flex; align-items: center; }
-        .vote-option label { cursor: pointer; display: flex; align-items: center; font-size: 17px; color: #333; }
-        .vote-option input[type="radio"] { margin-right: 12px; width: 20px; height: 20px; accent-color: #62C18F; }
-        .vote-section .btn { width: 100%; margin-top: 25px; }
-
-        .vote-result { margin-top: 30px; padding-top: 20px; border-top: 1px dashed #b0d8c7; }
-        .results-summary { background: #f0fdf7; padding: 20px; border-radius: 10px; margin-bottom: 25px; border: 1px solid #d0f0e0; }
-        .results-summary h4 { color: #2e7d32; margin-bottom: 15px; font-size: 18px; }
-        .results-summary p { margin-bottom: 8px; font-size: 15px; }
-        .results-summary p strong { color: #1e5a21; }
-
-        .chart-toggle { text-align: center; margin-bottom: 25px; }
-        .chart-toggle .btn { margin: 0 5px; padding: 8px 20px; border-radius: 20px; font-size: 14px; }
-        .active-chart { background: #62C18F !important; color: white !important; box-shadow: 0 4px 8px rgba(98, 193, 143, 0.4); }
-
-        .bar-item { margin-bottom: 20px; }
-        .bar-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 15px; color: #444; }
-        .bar-container { background: #e9ecef; height: 30px; border-radius: 15px; overflow: hidden; }
-        .bar-fill { height: 100%; border-radius: 15px; background: #62C18F; transition: width 1s ease-out; display: flex; align-items: center; justify-content: flex-end; padding-right: 10px; color: white; font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; }
-        .bar-fill span { margin-left: auto; padding-left: 5px; }
-        .chart-canvas { max-width: 400px; max-height: 400px; margin: 0 auto; }
-        .chart-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; }
-
-        .hidden { display: none !important; }
-        .text-center { text-align: center; }
         
-        .online-indicator { 
-            position: fixed; 
-            top: 20px; 
-            right: 20px; 
-            background: #62C18F; 
-            color: white; 
-            padding: 8px 16px; 
-            border-radius: 20px; 
-            font-size: 14px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            z-index: 999;
-        }
+        .login-section, .comment-input-section { margin-top: 30px; padding: 20px; background: #f0f8ff; border-radius: 10px; border: 1px solid #e0efff; }
+        .login-section h3, .comment-input-section h3 { margin-bottom: 15px; color: #0056b3; }
+        .login-info { margin-top: 15px; font-weight: bold; color: #28a745; }
+        .error-message { color: #dc3545; margin-top: 10px; font-size: 14px; }
+
+
+        .vote-section { margin: 30px 0; padding: 30px; border: 1px solid #ddd; } /* 잘린 스타일 마저 추가 */
     </style>
 </head>
 <body>
-    <div class="online-indicator" id="onlineIndicator">
-        🔴 연결 중...
-    </div>
-
-    <div id="loginModal" class="modal" style="display: flex;">
-        <div class="modal-content">
-            <h2>환영합니다!</h2>
-            <p style="margin-bottom: 20px; color: #666;">서울명덕초등학교 홈페이지에 로그인해주세요.</p>
-            <div class="form-group">
-                <label for="grade">학년:</label>
-                <select id="grade">
-                    <option value="">학년 선택</option>
-                    <option value="1">1학년</option>
-                    <option value="2">2학년</option>
-                    <option value="3">3학년</option>
-                    <option value="4">4학년</option>
-                    <option value="5">5학년</option>
-                    <option value="6">6학년</option>
-                    <option value="--">관리자</option>
-                </select>
+    <div class="container">
+        <header class="header">
+            <div class="header-left">
+                <div class="logo"><img src="https://via.placeholder.com/60" alt="로고"></div>
+                <h1 class="school-name">서울명덕초등학교</h1>
             </div>
+            <!-- 기타 헤더 요소 -->
+        </header>
+
+        <nav class="nav">
+            <button class="btn btn-primary">학교 소개</button>
+            <button class="btn btn-secondary">학교 생활</button>
+            <button class="btn btn-secondary">교육 활동</button>
+            <button class="btn btn-secondary">열린 마당</button>
+            <button class="btn btn-secondary">공지사항</button>
+        </nav>
+
+        <section class="section-card login-section">
+            <h3>로그인 / 회원가입 (Gun.js User)</h3>
             <div class="form-group">
-                <label for="class">반:</label>
-                <select id="class">
-                    <option value="">반 선택</option>
-                    <option value="1">1반</option>
-                    <option value="2">2반</option>
-                    <option value="3">3반</option>
-                    <option value="4">4반</option>
-                    <option value="5">5반</option>
-                    <option value="6">6반</option>
-                    <option value="7">7반</option>
-                    <option value="8">8반</option>
-                    <option value="9">9반</option>
-                    <option value="10">10반</option>
-                    <option value="11">11반</option>
-                    <option value="--">관리자</option>
-                </select>
+                <label for="username">사용자 이름:</label>
+                <input type="text" id="username" placeholder="사용자 이름 입력">
             </div>
             <div class="form-group">
-                <label for="lastName">성:</label>
-                <input type="text" id="lastName" placeholder="예: 김" required>
+                <label for="password">비밀번호:</label>
+                <input type="password" id="password" placeholder="비밀번호 입력">
             </div>
             <div class="form-group">
-                <label for="firstName">이름:</label>
-                <input type="text" id="firstName" placeholder="예: 명덕" required>
+                <label for="isAdminUser">관리자 계정인가요? (가입시 선택):</label>
+                <input type="checkbox" id="isAdminUser">
             </div>
-            <button class="btn btn-primary" onclick="login()">입장하기</button>
-        </div>
-    </div>
+            <button class="btn btn-primary" onclick="signUp()">회원가입</button>
+            <button class="btn btn-secondary" onclick="login()">로그인</button>
+            <button class="btn btn-danger" onclick="logout()">로그아웃</button>
+            <div id="loginStatus" class="login-info"></div>
+            <div id="loginError" class="error-message"></div>
+        </section>
 
-    <div id="mainPage" class="hidden">
-        <div class="container">
-            <div class="header">
-                <div class="header-left">
-                    <div class="logo">
-                        <img src="https://myungduk.sen.es.kr/dggb/module/file/selectImageView.do?atchFileId=276396&fileSn=0" alt="서울명덕초등학교 로고">
-                    </div>
-                    <div class="school-name">서울명덕초등학교</div>
-                </div>
-                <button class="btn btn-secondary" onclick="logout()">로그아웃</button>
-            </div>
-
-            <div id="hostButtons" class="nav hidden">
-                <button class="btn btn-primary" onclick="createVote('meal')">급식투표 생성</button>
-                <button class="btn btn-primary" onclick="createVote('music')">음악투표 생성</button>
-                <button class="btn btn-primary" onclick="editNews()">학교 소식 편집</button>
-                <button class="btn btn-danger" onclick="deleteVote()">현재 투표 삭제</button>
-            </div>
-
-            <div class="section-card news-section">
-                <h3>🏫 학교 소식</h3>
-                <div id="newsContent"></div>
-            </div>
-
-            <div id="voteSection" class="vote-section hidden">
-                <h3 id="voteTitle"></h3>
-                <div id="voteContent"></div>
-                <div id="voteResults" class="vote-result hidden">
-                    <div class="results-summary">
-                        <h4>📊 투표 결과 요약</h4>
-                        <div id="voteSummary"></div>
-                    </div>
-                    <div class="chart-toggle">
-                        <button class="btn btn-secondary active-chart" id="barBtn" onclick="showChart('bar')">막대 그래프 보기</button>
-                        <button class="btn btn-secondary" id="pieBtn" onclick="showChart('pie')">원형 그래프 보기</button>
-                    </div>
-                    <div id="barChart"><div id="barContent"></div></div>
-                    <div id="pieChart" class="chart-container hidden">
-                        <canvas id="voteChart" class="chart-canvas"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section-card comment-section">
-                <h3>💬 건의함</h3>
-                <div class="form-group">
-                    <textarea id="commentText" placeholder="학교에 건의하고 싶은 내용을 입력해주세요." rows="4"></textarea>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <label style="display: flex; align-items: center; font-weight: normal; margin-bottom: 0;">
-                        <input type="checkbox" id="privateComment" style="width: auto; margin-right: 8px;"> 비공개 댓글
-                    </label>
-                    <button class="btn btn-primary" onclick="addComment()">댓글 작성</button>
-                </div>
-                <div id="comments"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="voteModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="hideModal()">&times;</span>
-            <h2 id="voteModalTitle">투표 생성</h2>
+        <section class="section-card comment-input-section">
+            <h3>건의함 (댓글)</h3>
             <div class="form-group">
-                <label for="voteTitle2">투표 제목:</label>
-                <input type="text" id="voteTitle2" placeholder="예: 이번 주 급식 메뉴 투표">
+                <label for="commentAuthor">작성자:</label>
+                <input type="text" id="commentAuthor" placeholder="작성자 이름" maxlength="20">
             </div>
             <div class="form-group">
-                <label for="voteOptions">투표 선택지 (각 줄에 하나씩 입력):</label>
-                <textarea id="voteOptions" rows="6" placeholder="선택지 1&#10;선택지 2&#10;선택지 3"></textarea>
+                <label for="commentContent">내용 (<span id="commentCharCount">0</span>/150자):</label>
+                <textarea id="commentContent" placeholder="여기에 건의사항을 작성해주세요..." maxlength="150"></textarea>
+                <div id="commentError" class="error-message"></div>
             </div>
-            <div class="form-group">
-                <label for="voteDays">투표 기간 (일):</label>
-                <input type="number" id="voteDays" value="7" min="1">
+            <button class="btn btn-primary" onclick="addComment()">건의하기</button>
+            <div id="lastCommentTime" style="font-size: 12px; color: #888; margin-top: 5px;"></div>
+        </section>
+
+        <section class="section-card comment-section">
+            <h3>최신 건의사항 (총 <span id="commentCount">0</span>개)</h3>
+            <div id="commentsList">
+                <!-- 댓글들이 여기에 실시간으로 추가됩니다. -->
             </div>
-            <button class="btn btn-primary" onclick="startVote()">투표 시작</button>
-        </div>
+        </section>
     </div>
 
     <script>
-        // Initialize Gun.js for real-time data synchronization
-        const gun = Gun();
-        const schoolData = gun.get('myungduk-school');
-        const commentsDB = schoolData.get('comments');
-        const newsDB = schoolData.get('news');
-        const voteDB = schoolData.get('vote');
+        // Gun.js 인스턴스 초기화
+        // P2P 연결을 위해 릴레이 서버를 지정할 수 있습니다. (예: ['https://gun-peers.herokuapp.com/gun'])
+        // 여기서는 기본 로컬 스토리지를 사용합니다.
+        const db = Gun();
+        const user = db.user(); // Gun.js 사용자 인스턴스
+        let currentUserIsHost = false; // 현재 로그인한 사용자가 관리자인지 여부
+        let lastCommentTimestamp = 0; // 도배 방지를 위한 마지막 댓글 작성 시간
 
-        // Local data storage
-        let currentUser = null;
-        let currentVote = null;
-        let voteChart = null;
-        const colors = ['#62C18F', '#FFD700', '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#A3C8B7', '#8B0000'];
-        let processedComments = new Set(); // Track processed comment IDs to avoid duplicates
-        let processedVotes = new Set(); // Track processed votes to avoid duplicates
+        // DOM 요소 가져오기
+        const commentsList = document.getElementById('commentsList');
+        const commentAuthorInput = document.getElementById('commentAuthor');
+        const commentContentInput = document.getElementById('commentContent');
+        const commentCharCount = document.getElementById('commentCharCount');
+        const commentErrorDiv = document.getElementById('commentError');
+        const loginStatusDiv = document.getElementById('loginStatus');
+        const loginErrorDiv = document.getElementById('loginError');
+        const commentCountSpan = document.getElementById('commentCount');
+        const lastCommentTimeDiv = document.getElementById('lastCommentTime');
 
-        // Connection status indicator
-        gun.on('hi', () => {
-            document.getElementById('onlineIndicator').innerHTML = '🟢 실시간 연결됨';
+        // --- 사용자 인증 (로그인/회원가입) 관련 기능 ---
+
+        // 현재 로그인 상태 확인 및 isHost 값 로드
+        user.recall({ sessionStorage: true }).on(ack => {
+            if (ack.err) {
+                console.warn("로그인 정보 로드 실패:", ack.err);
+                loginStatusDiv.textContent = '로그아웃 상태입니다.';
+                currentUserIsHost = false;
+            } else if (ack.pub) {
+                user.get('profile').get('isAdmin').on(isAdmin => {
+                    currentUserIsHost = isAdmin === true;
+                    loginStatusDiv.textContent = `환영합니다, ${ack.alias}! 당신은 ${currentUserIsHost ? '관리자' : '일반 사용자'}입니다.`;
+                    console.log("현재 사용자 isHost:", currentUserIsHost);
+                });
+            } else {
+                loginStatusDiv.textContent = '로그아웃 상태입니다.';
+                currentUserIsHost = false;
+            }
+            updateCommentSectionVisibility(); // 로그인 상태에 따라 댓글 입력/삭제 버튼 표시 여부 업데이트
         });
 
-        gun.on('bye', () => {
-            document.getElementById('onlineIndicator').innerHTML = '🔴 연결 끊김';
-        });
+        function signUp() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const isAdmin = document.getElementById('isAdminUser').checked;
+            loginErrorDiv.textContent = ''; // 에러 메시지 초기화
 
-        // Real-time listeners
-        function initializeRealTimeListeners() {
-            // Listen for new comments
-            commentsDB.map().on((data, id) => {
-                if (!data || processedComments.has(id)) return;
-                processedComments.add(id);
-                displayComment(data);
-            });
+            if (!username || !password) {
+                loginErrorDiv.textContent = '사용자 이름과 비밀번호를 모두 입력해주세요.';
+                return;
+            }
 
-            // Listen for news updates
-            newsDB.on((data) => {
-                if (data && data.content) {
-                    document.getElementById('newsContent').innerHTML = data.content;
-                }
-            });
-
-            // Listen for vote updates
-            voteDB.on((data) => {
-                if (data) {
-                    currentVote = data;
-                    loadVote();
-                }
-            });
-
-            // Listen for vote submissions
-            voteDB.get('votes').map().on((data, id) => {
-                if (!data || processedVotes.has(id)) return;
-                processedVotes.add(id);
-                if (currentVote && data.optionIndex !== undefined) {
-                    currentVote.options[data.optionIndex].votes++;
-                    updateVoteDisplay();
+            user.create(username, password, ack => {
+                if (ack.err) {
+                    loginErrorDiv.textContent = `회원가입 실패: ${ack.err}`;
+                } else {
+                    alert('회원가입 성공!');
+                    // 프로필 정보에 isAdmin 저장
+                    user.get('profile').put({ alias: username, isAdmin: isAdmin });
+                    // 바로 로그인 시도
+                    user.auth(username, password, authAck => {
+                        if (authAck.err) {
+                            loginErrorDiv.textContent = `회원가입 후 자동 로그인 실패: ${authAck.err}`;
+                        } else {
+                            loginStatusDiv.textContent = `환영합니다, ${username}! 당신은 ${isAdmin ? '관리자' : '일반 사용자'}입니다.`;
+                            currentUserIsHost = isAdmin;
+                            updateCommentSectionVisibility();
+                        }
+                    });
                 }
             });
         }
 
-        // --- Login/Logout Functions ---
         function login() {
-            const grade = document.getElementById('grade').value;
-            const cls = document.getElementById('class').value;
-            const lastName = document.getElementById('lastName').value.trim();
-            const firstName = document.getElementById('firstName').value.trim();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            loginErrorDiv.textContent = ''; // 에러 메시지 초기화
 
-            if (!grade || !cls || !lastName || !firstName) {
-                alert('모든 정보를 입력해주세요.');
+            if (!username || !password) {
+                loginErrorDiv.textContent = '사용자 이름과 비밀번호를 모두 입력해주세요.';
                 return;
             }
 
-            const isHost = grade === '--' && cls === '--';
-            currentUser = { grade, class: cls, lastName, firstName, isHost };
-
-            document.getElementById('loginModal').style.display = 'none';
-            document.getElementById('mainPage').classList.remove('hidden');
-
-            if (isHost) {
-                document.getElementById('hostButtons').classList.remove('hidden');
-            }
-
-            initializeRealTimeListeners();
-            loadContent();
+            user.auth(username, password, ack => {
+                if (ack.err) {
+                    loginErrorDiv.textContent = `로그인 실패: ${ack.err}`;
+                } else {
+                    user.get('profile').get('isAdmin').on(isAdmin => {
+                        currentUserIsHost = isAdmin === true; // isAdmin이 없으면 false
+                        loginStatusDiv.textContent = `환영합니다, ${username}! 당신은 ${currentUserIsHost ? '관리자' : '일반 사용자'}입니다.`;
+                        updateCommentSectionVisibility();
+                    });
+                }
+            });
         }
 
         function logout() {
-            currentUser = null;
-            processedComments.clear();
-            processedVotes.clear();
-            document.getElementById('loginModal').style.display = 'flex';
-            document.getElementById('mainPage').classList.add('hidden');
-            document.getElementById('hostButtons').classList.add('hidden');
-            document.getElementById('comments').innerHTML = '';
+            user.leave();
+            currentUserIsHost = false;
+            loginStatusDiv.textContent = '로그아웃 되었습니다.';
+            loginErrorDiv.textContent = '';
+            updateCommentSectionVisibility();
+            console.log("로그아웃 완료");
         }
+        
+        // --- 댓글 기능 ---
 
-        function loadContent() {
-            // Load initial news
-            newsDB.once((data) => {
-                if (data && data.content) {
-                    document.getElementById('newsContent').innerHTML = data.content;
-                } else {
-                    const defaultNews = '안녕하세요! 서울명덕초등학교 홈페이지입니다.';
-                    newsDB.put({ content: defaultNews, timestamp: Gun.state() });
-                }
-            });
+        // 댓글 입력창 글자 수 카운트
+        commentContentInput.addEventListener('input', () => {
+            commentCharCount.textContent = commentContentInput.value.length;
+        });
 
-            // Load initial vote
-            voteDB.once((data) => {
-                if (data) {
-                    currentVote = data;
-                    loadVote();
-                }
-            });
-        }
-
-        // --- Comment Functions ---
+        // 댓글 추가 함수
         function addComment() {
-            const text = document.getElementById('commentText').value.trim();
-            if (!text) {
-                alert('댓글 내용을 입력해주세요.');
+            const author = commentAuthorInput.value.trim();
+            const content = commentContentInput.value.trim();
+            const now = Date.now();
+            commentErrorDiv.textContent = '';
+
+            // 도배 방지: 최소 5초 간격
+            const MIN_COMMENT_INTERVAL = 5 * 1000; // 5초
+            if (now - lastCommentTimestamp < MIN_COMMENT_INTERVAL) {
+                commentErrorDiv.textContent = `도배 방지를 위해 잠시 후 다시 작성해주세요 (${Math.ceil((MIN_COMMENT_INTERVAL - (now - lastCommentTimestamp)) / 1000)}초 남음).`;
                 return;
             }
 
-            // Basic profanity filter
-            const forbiddenWords = ['씨발', '씨발년', '씨발놈', '씨벌', '씨부랄', '씨부랄년', '씨벌년','지랄','fuck','mother','shut'];
-            for (let word of forbiddenWords) {
-                if (text.includes(word)) {
-                    alert('부적절한 내용이 포함되어 있습니다.');
-                    return;
+            if (!author || !content) {
+                commentErrorDiv.textContent = '작성자와 내용을 모두 입력해주세요.';
+                return;
+            }
+
+            if (content.length > 150) { // 최대 입력 글자 수 제한 (maxlength는 HTML에서 이미 설정)
+                commentErrorDiv.textContent = '댓글은 150자 이내로 작성해주세요.';
+                return;
+            }
+            
+            // Gun.js를 통한 댓글 저장
+            const commentId = Gun.SEA.pair().pub; // 각 댓글에 고유 ID 부여 (임시로 pub key 사용)
+            const commentData = {
+                id: commentId,
+                author: author,
+                content: content,
+                timestamp: now,
+                owner: user.is && user.is.pub ? user.is.pub : null // 로그인한 사용자가 있다면 소유자 ID 저장
+            };
+
+            // 'comments' 컬렉션에 댓글 추가
+            db.get('comments').get(commentId).put(commentData, ack => {
+                if (ack.err) {
+                    commentErrorDiv.textContent = `댓글 저장 실패: ${ack.err}`;
+                    console.error("댓글 저장 에러:", ack.err);
+                } else {
+                    commentAuthorInput.value = '';
+                    commentContentInput.value = '';
+                    commentCharCount.textContent = '0';
+                    lastCommentTimestamp = now;
+                    lastCommentTimeDiv.textContent = `마지막 댓글 작성: ${new Date(now).toLocaleTimeString()}`;
+                    console.log('댓글이 성공적으로 추가되었습니다:', commentData);
                 }
-            }
-
-            const comment = {
-                author: currentUser.firstName,
-                profile: currentUser.firstName[0] || '?',
-                text: text,
-                private: document.getElementById('privateComment').checked,
-                timestamp: new Date().toLocaleString('ko-KR'),
-                id: Gun.state()
-            };
-
-            commentsDB.set(comment);
-            document.getElementById('commentText').value = '';
-            document.getElementById('privateComment').checked = false;
+            });
         }
 
-        function displayComment(comment) {
-            // Only show private comments to host or the author
-            if (comment.private && !currentUser.isHost && comment.author !== currentUser.firstName) {
+        // 댓글 삭제 함수
+        // Gun.js에서는 특정 노드를 'null'로 설정하면 삭제됩니다.
+        function deleteComment(commentId, commentOwnerPub) {
+            if (!user.is) { // 로그인 여부 확인
+                alert('로그인 후 이용해주세요.');
                 return;
             }
-
-            const container = document.getElementById('comments');
-            const div = document.createElement('div');
-            div.className = 'comment';
-            div.innerHTML = `
-                <div class="comment-author">
-                    <span class="profile">${comment.profile}</span>
-                    ${comment.author}
-                    ${comment.private ? '<span style="color:#888; font-weight:normal; margin-left: 5px;">(비공개)</span>' : ''}
-                </div>
-                <div class="comment-text">${comment.text}</div>
-                <div class="comment-meta">
-                    <small>${comment.timestamp}</small>
-                </div>
-            `;
-            container.insertBefore(div, container.firstChild);
+            
+            // P2P 환경에서는 보안 로직이 중요합니다.
+            // 여기서는 currentUserIsHost 변수를 사용해 UI에서 삭제 버튼을 제어하지만,
+            // 실제 데이터 삭제 권한은 Gun.js의 'owner' 개념과 연동하는 것이 좋습니다.
+            // 기본 Gun.js에서는 본인이 생성한 데이터만 삭제 가능하도록 되어 있습니다.
+            // 관리자가 타인의 댓글을 삭제하려면, Gun.js 'ACL' (Access Control List) 또는
+            // 'trust chain'과 같은 더 심화된 개념이 필요합니다.
+            // 여기서는 일단 'currentUserIsHost'가 true이면 삭제를 시도하도록 합니다.
+            // (주의: 이는 클라이언트 측 검증에 가까우며, 숙련된 사용자는 우회할 수 있습니다.)
+            if (!currentUserIsHost) {
+                alert('관리자만 댓글을 삭제할 수 있습니다.');
+                return;
+            }
+            
+            if (confirm('이 댓글을 정말로 삭제하시겠습니까?')) {
+                // 특정 댓글 ID를 가진 노드를 찾아 null로 설정 (삭제)
+                db.get('comments').get(commentId).put(null, ack => {
+                    if (ack.err) {
+                        alert(`댓글 삭제 실패: ${ack.err}`);
+                        console.error("댓글 삭제 에러:", ack.err);
+                    } else {
+                        console.log('댓글이 성공적으로 삭제되었습니다:', commentId);
+                    }
+                });
+            }
         }
+        
+        // --- 댓글 목록 실시간 렌더링 및 자동 삭제 로직 ---
 
-        // --- Vote Functions ---
-        function createVote(type) {
-            if (!currentUser.isHost) {
-                alert('투표는 관리자만 생성할 수 있습니다.');
-                return;
-            }
-            document.getElementById('voteModalTitle').textContent = type === 'meal' ? '급식 투표 생성' : '음악 투표 생성';
-            document.getElementById('voteModal').style.display = 'flex';
-            document.getElementById('voteTitle2').value = '';
-            document.getElementById('voteOptions').value = '';
-            document.getElementById('voteDays').value = 7;
-        }
+        let allComments = {}; // 모든 댓글 데이터를 저장할 객체
+        const MAX_COMMENTS = 7; // 최대 댓글 개수
 
-        function hideModal() {
-            document.getElementById('voteModal').style.display = 'none';
-        }
+        function renderComments() {
+            const sortedComments = Object.values(allComments)
+                                       .filter(comment => comment && comment.timestamp) // 유효하고 timestamp 있는 댓글만 필터
+                                       .sort((a, b) => b.timestamp - a.timestamp); // 최신 댓글부터 정렬 (내림차순)
 
-        function startVote() {
-            const title = document.getElementById('voteTitle2').value.trim();
-            const optionsText = document.getElementById('voteOptions').value.trim();
-            const days = parseInt(document.getElementById('voteDays').value);
+            commentCountSpan.textContent = sortedComments.length;
+            commentsList.innerHTML = ''; // 기존 목록 비우기
 
-            if (!title || !optionsText) {
-                alert('투표 제목과 선택지를 모두 입력해주세요.');
-                return;
-            }
+            const commentsToDisplay = sortedComments.slice(0, MAX_COMMENTS); // 최대 7개만 표시
 
-            const options = optionsText.split('\n').filter(o => o.trim()).map(o => o.trim());
-            if (options.length < 2) {
-                alert('최소 2개 이상의 선택지를 입력해주세요.');
-                return;
-            }
+            commentsToDisplay.forEach(comment => {
+                const commentElement = document.createElement('div');
+                commentElement.classList.add('comment');
+                commentElement.setAttribute('data-comment-id', comment.id);
 
-            const endTime = new Date();
-            endTime.setDate(endTime.getDate() + days);
+                const profileInitial = comment.author ? comment.author[0] : '?';
+                const deleteButtonHtml = currentUserIsHost 
+                    ? `<button onclick="deleteComment('${comment.id}', '${comment.owner}')">삭제</button>` 
+                    : '';
 
-            const vote = {
-                title: title,
-                options: options.map(o => ({ text: o, votes: 0 })),
-                endTime: endTime.getTime(),
-                voters: [],
-                resultsPublished: false,
-                timestamp: Gun.state()
-            };
-
-            voteDB.put(vote);
-            processedVotes.clear(); // Reset processed votes for new vote
-            document.getElementById('voteModal').style.display = 'none';
-            alert('새로운 투표가 시작되었습니다!');
-        }
-
-        function loadVote() {
-            if (!currentVote) {
-                document.getElementById('voteSection').classList.add('hidden');
-                return;
-            }
-
-            document.getElementById('voteSection').classList.remove('hidden');
-            document.getElementById('voteTitle').textContent = currentVote.title;
-            const container = document.getElementById('voteContent');
-            container.innerHTML = '';
-            document.getElementById('voteResults').classList.add('hidden');
-
-            const hasVoted = currentVote.voters && currentVote.voters.includes(currentUser.lastName + currentUser.firstName);
-            const voteEnded = new Date().getTime() > currentVote.endTime;
-
-            if (voteEnded) {
-                showVoteResults();
-                return;
-            }
-
-            currentVote.options.forEach((option, index) => {
-                const div = document.createElement('div');
-                div.className = 'vote-option';
-                div.innerHTML = `
-                    <label>
-                        <input type="radio" name="vote" value="${index}" ${hasVoted ? 'disabled' : ''}>
-                        ${option.text}
-                    </label>
+                commentElement.innerHTML = `
+                    <div class="comment-author">
+                        <span class="profile">${profileInitial}</span>
+                        ${comment.author}
+                    </div>
+                    <p class="comment-text">${comment.content}</p>
+                    <div class="comment-meta">
+                        <span>${new Date(comment.timestamp).toLocaleString()}</span>
+                        <div class="comment-options">${deleteButtonHtml}</div>
+                    </div>
                 `;
-                container.appendChild(div);
+                commentsList.appendChild(commentElement);
             });
 
-            if (!hasVoted) {
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-primary';
-                btn.textContent = '투표하기';
-                btn.onclick = submitVote;
-                container.appendChild(btn);
-            } else {
-                container.innerHTML += `<p class="text-center" style="margin-top:20px; color:#555;">이미 투표에 참여하셨습니다.</p>`;
-            }
-            
-            container.innerHTML += `<p class="text-center" style="margin-top:20px; color:#777;"><small>마감: ${new Date(currentVote.endTime).toLocaleString('ko-KR')}</small></p>`;
-        }
-
-        function submitVote() {
-            const selected = document.querySelector('input[name="vote"]:checked');
-            if (!selected) {
-                alert('투표할 항목을 선택해주세요.');
-                return;
-            }
-
-            const voterKey = currentUser.lastName + currentUser.firstName;
-            if (currentVote.voters && currentVote.voters.includes(voterKey)) {
-                alert('이미 투표에 참여하셨습니다.');
-                return;
-            }
-
-            // Add vote to database
-            const voteData = {
-                optionIndex: parseInt(selected.value),
-                voter: voterKey,
-                timestamp: Gun.state()
-            };
-            voteDB.get('votes').set(voteData);
-
-            // Update current vote data
-            if (!currentVote.voters) currentVote.voters = [];
-            currentVote.voters.push(voterKey);
-            currentVote.options[parseInt(selected.value)].votes++;
-            
-            // Update vote in database
-            voteDB.put(currentVote);
-            
-            alert('투표가 완료되었습니다!');
-        }
-
-        function updateVoteDisplay() {
-            if (document.getElementById('voteResults').classList.contains('hidden')) {
-                loadVote(); // Refresh vote display
-            } else {
-                showVoteResults(); // Update results if already showing
-            }
-        }
-
-        function showVoteResults() {
-            if (!currentVote) return;
-
-            document.getElementById('voteContent').classList.add('hidden');
-            document.getElementById('voteResults').classList.remove('hidden');
-
-            const totalVotes = currentVote.options.reduce((sum, opt) => sum + opt.votes, 0);
-            const sortedOptions = [...currentVote.options].sort((a, b) => b.votes - a.votes);
-            const winner = sortedOptions[0];
-
-            document.getElementById('voteSummary').innerHTML = `
-                <p><strong>총 투표 수:</strong> ${totalVotes}표</p>
-                <p><strong>참여한 학생 수:</strong> ${currentVote.voters ? currentVote.voters.length : 0}명</p>
-                <p><strong>🏆 1위:</strong> ${winner.text} (${winner.votes}표)</p>
-            `;
-            
-            if (!currentVote.resultsPublished) {
-                const resultNews = `📊 ${currentVote.title} 결과 발표!\n🏆 1위: ${winner.text} (${winner.votes}표)\n총 ${totalVotes}표 투표\n\n`;
-                newsDB.once((data) => {
-                    const currentNews = data && data.content ? data.content : '';
-                    newsDB.put({
-                        content: resultNews + currentNews,
-                        timestamp: Gun.state()
+            // 7개를 초과하는 오래된 댓글 자동 삭제 로직 (Gun.js)
+            // 주의: 이 로직은 각 클라이언트에서 개별적으로 실행되며,
+            // P2P 환경에서 모든 노드가 완벽히 동기화되기까지 시간이 걸릴 수 있습니다.
+            // 더 강력한 중앙 관리 (예: 신뢰할 수 있는 릴레이 서버) 없이는 '확실한' 삭제를 보장하기 어려울 수 있습니다.
+            if (sortedComments.length > MAX_COMMENTS) {
+                const commentsToDelete = sortedComments.slice(MAX_COMMENTS); // 7개를 초과하는 오래된 댓글
+                commentsToDelete.forEach(comment => {
+                    console.log(`오래된 댓글 자동 삭제 시도: ${comment.id}`);
+                    db.get('comments').get(comment.id).put(null, ack => {
+                        if (ack.err) {
+                            console.error(`자동 삭제 실패 (${comment.id}): ${ack.err}`);
+                        } else {
+                            console.log(`자동 삭제 성공 (${comment.id})`);
+                        }
                     });
                 });
-                currentVote.resultsPublished = true;
-                voteDB.put(currentVote);
-            }
-
-            createBarChart();
-            createPieChart();
-            showChart('bar');
-        }
-
-        function createBarChart() {
-            const container = document.getElementById('barContent');
-            container.innerHTML = '';
-            const total = currentVote.options.reduce((sum, opt) => sum + opt.votes, 0);
-            
-            const sortedOptions = [...currentVote.options].sort((a, b) => b.votes - a.votes);
-
-            sortedOptions.forEach((option, index) => {
-                const percentage = total > 0 ? (option.votes / total) * 100 : 0;
-                const div = document.createElement('div');
-                div.className = 'bar-item';
-                div.innerHTML = `
-                    <div class="bar-label">
-                        <span><strong>${option.text}</strong></span>
-                        <span>${option.votes}표 (${percentage.toFixed(1)}%)</span>
-                    </div>
-                    <div class="bar-container">
-                        <div class="bar-fill" style="background: ${colors[index % colors.length]}; width: ${percentage}%;">
-                            ${percentage > 5 ? `${percentage.toFixed(1)}%` : ''}
-                        </div>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function createPieChart() {
-            const ctx = document.getElementById('voteChart').getContext('2d');
-            if (voteChart) voteChart.destroy();
-
-            const labels = currentVote.options.map(o => o.text);
-            const data = currentVote.options.map(o => o.votes);
-            const total = data.reduce((sum, votes) => sum + votes, 0);
-
-            voteChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: colors.slice(0, labels.length),
-                        borderColor: '#fff',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true,
-                                font: { size: 13 }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const percentage = total > 0 ? (context.parsed / total) * 100 : 0;
-                                    return `${context.label}: ${context.parsed}표 (${percentage.toFixed(1)}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function showChart(type) {
-            document.getElementById('barBtn').classList.remove('active-chart');
-            document.getElementById('pieBtn').classList.remove('active-chart');
-            if (type === 'bar') {
-                document.getElementById('barChart').classList.remove('hidden');
-                document.getElementById('pieChart').classList.add('hidden');
-                document.getElementById('barBtn').classList.add('active-chart');
-            } else {
-                document.getElementById('barChart').classList.add('hidden');
-                document.getElementById('pieChart').classList.remove('hidden');
-                document.getElementById('pieBtn').classList.add('active-chart');
             }
         }
 
-        function editNews() {
-            if (!currentUser.isHost) {
-                alert('학교 소식은 관리자만 편집할 수 있습니다.');
-                return;
+        // Gun.js를 통해 'comments' 노드의 모든 변경 사항 실시간으로 감지
+        db.get('comments').map().on((comment, id) => {
+            if (comment) { // 댓글이 존재하면 추가/업데이트
+                allComments[id] = comment;
+            } else { // 댓글이 null로 설정되면 (삭제되면) allComments에서 제거
+                delete allComments[id];
             }
-            
-            newsDB.once((data) => {
-                const currentNews = data && data.content ? data.content : '안녕하세요! 서울명덕초등학교 홈페이지입니다.';
-                const newNews = prompt('새로운 학교 소식을 입력해주세요:', currentNews);
-                if (newNews !== null) {
-                    newsDB.put({
-                        content: newNews,
-                        timestamp: Gun.state()
-                    });
-                    alert('학교 소식이 업데이트되었습니다.');
-                }
-            });
-        }
-
-        function deleteVote() {
-            if (!currentUser.isHost) {
-                alert('투표는 관리자만 삭제할 수 있습니다.');
-                return;
-            }
-            if (!currentVote) {
-                alert('현재 진행 중인 투표가 없습니다.');
-                return;
-            }
-            if (confirm('현재 진행 중인 투표를 정말 삭제하시겠습니까? 투표 결과도 함께 사라집니다.')) {
-                voteDB.put(null);
-                voteDB.get('votes').put(null);
-                currentVote = null;
-                processedVotes.clear();
-                document.getElementById('voteSection').classList.add('hidden');
-                alert('투표가 성공적으로 삭제되었습니다.');
-            }
-        }
-
-        // Check vote end time periodically
-        setInterval(() => {
-            if (currentVote && new Date().getTime() > currentVote.endTime && !document.getElementById('voteResults').classList.contains('hidden') === false) {
-                showVoteResults();
-            }
-        }, 60000);
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            // Set connection indicator
-            setTimeout(() => {
-                if (document.getElementById('onlineIndicator').innerHTML.includes('연결 중')) {
-                    document.getElementById('onlineIndicator').innerHTML = '🟢 실시간 연결됨';
-                }
-            }, 2000);
+            renderComments(); // 변경된 데이터를 기반으로 댓글 목록 다시 그리기
         });
+
+        // --- 기타 UI 업데이트 함수 ---
+
+        // 로그인 상태에 따라 댓글 관련 섹션의 가시성을 업데이트 (예: 관리자 삭제 버튼)
+        function updateCommentSectionVisibility() {
+            const commentElements = commentsList.querySelectorAll('.comment');
+            commentElements.forEach(commentEl => {
+                const deleteButton = commentEl.querySelector('.comment-options button');
+                if (deleteButton) {
+                    deleteButton.style.display = currentUserIsHost ? 'inline-block' : 'none';
+                }
+            });
+
+            // 작성자 입력창에 현재 로그인 사용자 이름 자동 채우기 (로그인 시)
+            if (user.is && user.is.alias) {
+                commentAuthorInput.value = user.is.alias;
+                commentAuthorInput.readOnly = true; // 로그인 시 작성자 이름 수정 불가
+            } else {
+                commentAuthorInput.value = '';
+                commentAuthorInput.readOnly = false;
+            }
+        }
+
+        // 초기 로드 시 댓글 목록 렌더링 및 UI 업데이트
+        renderComments(); // 초기화 시 한 번 호출
+        updateCommentSectionVisibility(); // 초기화 시 로그인 상태 반영
     </script>
 </body>
 </html>
