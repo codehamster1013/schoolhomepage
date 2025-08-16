@@ -578,25 +578,34 @@
         // 공개 건의사항 로드 (메인 페이지용)
         async function loadPublicSuggestions() {
             try {
-                const { data: suggestions } = await supabase
+                console.log('공개 건의사항 로딩 시작...');
+                
+                const { data: suggestions, error } = await supabase
                     .from('suggestions')
                     .select('*')
                     .order('created_at', { ascending: false })
                     .limit(10);
 
+                if (error) {
+                    console.error('건의사항 로드 에러:', error);
+                    throw error;
+                }
+
+                console.log('로드된 건의사항:', suggestions);
+
                 const suggestionsList = document.getElementById('publicSuggestionsList');
                 if (!suggestions || suggestions.length === 0) {
-                    suggestionsList.innerHTML = '<p>건의사항이 없습니다.</p>';
+                    suggestionsList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">아직 건의사항이 없습니다. 첫 번째 건의를 남겨보세요!</p>';
                 } else {
                     suggestionsList.innerHTML = suggestions.map(suggestion => `
                         <div class="suggestion-item">
                             <div style="display: flex; align-items: center; margin-bottom: 10px;">
                                 <div class="profile-circle" style="background: ${suggestion.profile_color};">
-                                    ${suggestion.user_name[0]}
+                                    ${suggestion.user_name ? suggestion.user_name[0] : '?'}
                                 </div>
                                 <div>
                                     <strong>${suggestion.user_grade}학년 ${suggestion.user_class}반 ${suggestion.user_name}</strong>
-                                    <br><small>${new Date(suggestion.created_at).toLocaleString()}</small>
+                                    <br><small>${new Date(suggestion.created_at).toLocaleString('ko-KR')}</small>
                                 </div>
                             </div>
                             <p>${suggestion.content}</p>
@@ -605,40 +614,63 @@
                 }
             } catch (error) {
                 console.error('공개 건의사항 로드 실패:', error);
+                const suggestionsList = document.getElementById('publicSuggestionsList');
+                suggestionsList.innerHTML = `
+                    <p style="text-align: center; color: #e74c3c; padding: 20px;">
+                        건의사항을 불러오는데 실패했습니다.<br>
+                        <small>오류: ${error.message}</small>
+                    </p>
+                `;
             }
         }
 
         // 건의사항 보기 (일반 사용자용)
         async function viewAllSuggestions() {
+            // 로딩 표시
+            const suggestionsList = document.getElementById('publicSuggestionsModalList');
+            suggestionsList.innerHTML = '<p>건의사항을 불러오는 중...</p>';
+            
+            // 모달 먼저 표시
+            document.getElementById('publicSuggestionsModal').style.display = 'flex';
+            
             try {
-                const { data: suggestions } = await supabase
+                // 데이터베이스에서 모든 건의사항 가져오기
+                const { data: suggestions, error } = await supabase
                     .from('suggestions')
                     .select('*')
                     .order('created_at', { ascending: false });
 
-                const suggestionsList = document.getElementById('publicSuggestionsModalList');
+                if (error) {
+                    throw error;
+                }
+
                 if (!suggestions || suggestions.length === 0) {
-                    suggestionsList.innerHTML = '<p>건의사항이 없습니다.</p>';
+                    suggestionsList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">아직 건의사항이 없습니다.</p>';
                 } else {
                     suggestionsList.innerHTML = suggestions.map(suggestion => `
                         <div class="suggestion-item">
                             <div style="display: flex; align-items: center; margin-bottom: 10px;">
                                 <div class="profile-circle" style="background: ${suggestion.profile_color};">
-                                    ${suggestion.user_name[0]}
+                                    ${suggestion.user_name ? suggestion.user_name[0] : '?'}
                                 </div>
                                 <div>
                                     <strong>${suggestion.user_grade}학년 ${suggestion.user_class}반 ${suggestion.user_name}</strong>
-                                    <br><small>${new Date(suggestion.created_at).toLocaleString()}</small>
+                                    <br><small>${new Date(suggestion.created_at).toLocaleString('ko-KR')}</small>
                                 </div>
                             </div>
                             <p>${suggestion.content}</p>
                         </div>
                     `).join('');
                 }
-
-                document.getElementById('publicSuggestionsModal').style.display = 'flex';
             } catch (error) {
                 console.error('건의사항 로드 실패:', error);
+                suggestionsList.innerHTML = `
+                    <p style="text-align: center; color: #e74c3c; padding: 20px;">
+                        건의사항을 불러오는데 실패했습니다.<br>
+                        <small>오류: ${error.message}</small><br>
+                        <button class="btn btn-small" onclick="viewAllSuggestions()" style="margin-top: 10px;">다시 시도</button>
+                    </p>
+                `;
             }
         }
 
