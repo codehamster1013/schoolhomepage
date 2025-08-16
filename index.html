@@ -22,9 +22,12 @@
         .btn-danger:hover { background: #c0392b; }
         .btn-success { background: #27ae60; }
         .btn-success:hover { background: #219a52; }
+        .btn-warning { background: #f39c12; }
+        .btn-warning:hover { background: #d68910; }
         .btn-small { padding: 8px 16px; font-size: 14px; }
-        .vote-item { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 15px 0; }
+        .vote-item { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 15px 0; position: relative; }
         .vote-item.active { border-color: #667eea; background: #f0f3ff; }
+        .vote-item.expired { border-color: #e74c3c; background: #fdf2f2; }
         .chart-container { width: 100%; height: 300px; margin: 20px 0; }
         .suggestions { position: fixed; top: 20px; right: 20px; z-index: 100; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; }
@@ -38,12 +41,17 @@
         .vote-option { background: white; border: 2px solid #e9ecef; border-radius: 8px; padding: 15px; cursor: pointer; text-align: center; transition: all 0.3s; }
         .vote-option:hover { border-color: #667eea; background: #f0f3ff; }
         .vote-option.selected { border-color: #667eea; background: #667eea; color: white; }
+        .vote-option.disabled { background: #f5f5f5; color: #999; cursor: not-allowed; border-color: #ddd; }
         .admin-panel { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 20px 0; }
         .hidden { display: none; }
         .error { color: #e74c3c; font-size: 14px; margin-top: 5px; }
         .success { color: #27ae60; font-size: 14px; margin-top: 5px; }
         .admin-hint { background: #e8f5e8; border: 1px solid #c3e6c3; border-radius: 6px; padding: 10px; margin-top: 10px; font-size: 14px; color: #2d5016; }
         .public-suggestions { background: white; border-radius: 12px; padding: 20px; margin: 20px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .countdown { background: #667eea; color: white; padding: 10px; border-radius: 6px; margin: 10px 0; text-align: center; font-weight: bold; }
+        .expired-badge { background: #e74c3c; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; position: absolute; top: 10px; right: 10px; }
+        .time-left { color: #667eea; font-weight: bold; margin: 5px 0; }
+        .datetime-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     </style>
 </head>
 <body>
@@ -148,6 +156,19 @@
                 <input type="text" id="voteTitle" placeholder="투표 제목을 입력하세요">
             </div>
             <div class="form-group">
+                <label>투표 기간</label>
+                <div class="datetime-group">
+                    <div>
+                        <label style="font-size: 14px;">종료 날짜</label>
+                        <input type="date" id="voteEndDate">
+                    </div>
+                    <div>
+                        <label style="font-size: 14px;">종료 시간</label>
+                        <input type="time" id="voteEndTime">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
                 <label>선택지 (각 줄에 하나씩)</label>
                 <textarea id="voteOptions" rows="5" placeholder="선택지1&#10;선택지2&#10;선택지3"></textarea>
             </div>
@@ -208,6 +229,7 @@
 
         let currentUser = null;
         let selectedProfileColor = '#3498db';
+        let countdownTimers = {};
 
         // 욕설 필터링
         const badWords = ['바보', '멍청이', '죽어', '꺼져', '시발', '병신', '개새끼', '씨발'];
@@ -265,6 +287,28 @@
             document.getElementById('userInfo').innerHTML = userInfo;
         }
 
+        // 시간 형식 변환
+        function formatTimeLeft(endTime) {
+            const now = new Date();
+            const end = new Date(endTime);
+            const diff = end - now;
+
+            if (diff <= 0) return '투표 종료';
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            if (days > 0) return `${days}일 ${hours}시간 남음`;
+            if (hours > 0) return `${hours}시간 ${minutes}분 남음`;
+            return `${minutes}분 남음`;
+        }
+
+        // 투표 기간 확인
+        function isVoteExpired(endTime) {
+            return new Date() > new Date(endTime);
+        }
+
         // 투표 로드
         async function loadVotes() {
             try {
@@ -280,23 +324,65 @@
                     return;
                 }
 
-                votesList.innerHTML = votes.map(vote => `
-                    <div class="vote-item">
-                        <h3>${vote.title}</h3>
-                        <p><strong>${getVoteTypeLabel(vote.type)}</strong></p>
-                        <div class="vote-options" id="options_${vote.id}">
-                            ${vote.options.map((option, idx) => 
-                                `<div class="vote-option" onclick="selectOption(${vote.id}, ${idx})">${option}</div>`
-                            ).join('')}
+                // 기존 타이머 정리
+                Object.values(countdownTimers).forEach(timer => clearInterval(timer));
+                countdownTimers = {};
+
+                votesList.innerHTML = votes.map(vote => {
+                    const expired = vote.end_time && isVoteExpired(vote.end_time);
+                    const timeLeft = vote.end_time ? formatTimeLeft(vote.end_time) : '';
+                    
+                    return `
+                        <div class="vote-item ${expired ? 'expired' : ''}">
+                            ${expired ? '<div class="expired-badge">투표 종료</div>' : ''}
+                            <h3>${vote.title}</h3>
+                            <p><strong>${getVoteTypeLabel(vote.type)}</strong></p>
+                            ${vote.end_time ? `<div class="time-left" id="timeLeft_${vote.id}">${timeLeft}</div>` : ''}
+                            <div class="vote-options" id="options_${vote.id}">
+                                ${vote.options.map((option, idx) => 
+                                    `<div class="vote-option ${expired ? 'disabled' : ''}" 
+                                        onclick="${expired ? '' : `selectOption(${vote.id}, ${idx})`}">${option}</div>`
+                                ).join('')}
+                            </div>
+                            <div style="margin-top: 15px;">
+                                ${!expired ? `<button class="btn btn-small" onclick="vote(${vote.id})">투표하기</button>` : ''}
+                                ${currentUser.isAdmin ? `
+                                    <button class="btn btn-danger btn-small" onclick="deleteVote(${vote.id})" style="margin-left: 10px;">삭제</button>
+                                    <button class="btn btn-small" onclick="completeVote(${vote.id})" style="margin-left: 10px;">투표 완료</button>
+                                ` : ''}
+                            </div>
                         </div>
-                        <button class="btn btn-small" onclick="vote(${vote.id})" style="margin-top: 15px;">투표하기</button>
-                        ${currentUser.isAdmin ? `<button class="btn btn-danger btn-small" onclick="deleteVote(${vote.id})" style="margin-top: 15px; margin-left: 10px;">삭제</button>` : ''}
-                        ${currentUser.isAdmin ? `<button class="btn btn-small" onclick="completeVote(${vote.id})" style="margin-top: 15px; margin-left: 10px;">투표 완료</button>` : ''}
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
+
+                // 실시간 카운트다운 시작
+                votes.forEach(vote => {
+                    if (vote.end_time && !isVoteExpired(vote.end_time)) {
+                        startCountdown(vote.id, vote.end_time);
+                    }
+                });
             } catch (error) {
                 console.error('투표 로드 실패:', error);
             }
+        }
+
+        // 카운트다운 타이머 시작
+        function startCountdown(voteId, endTime) {
+            const timer = setInterval(() => {
+                const timeLeftElement = document.getElementById(`timeLeft_${voteId}`);
+                if (timeLeftElement) {
+                    const timeLeft = formatTimeLeft(endTime);
+                    timeLeftElement.textContent = timeLeft;
+                    
+                    if (isVoteExpired(endTime)) {
+                        clearInterval(timer);
+                        loadVotes(); // 투표 목록 새로고침
+                        loadCompletedVotes(); // 완료된 투표에 자동 추가될 수 있도록
+                    }
+                }
+            }, 60000); // 1분마다 업데이트
+
+            countdownTimers[voteId] = timer;
         }
 
         function getVoteTypeLabel(type) {
@@ -313,10 +399,11 @@
         // 완료된 투표 결과 로드
         async function loadCompletedVotes() {
             try {
+                // 완료된 투표와 기간이 지난 투표 모두 가져오기
                 const { data: votes } = await supabase
                     .from('votes')
                     .select('*')
-                    .eq('is_completed', true)
+                    .or('is_completed.eq.true,end_time.lt.' + new Date().toISOString())
                     .order('completed_at', { ascending: false });
 
                 const completedVotes = document.getElementById('completedVotes');
@@ -327,10 +414,22 @@
 
                 completedVotes.innerHTML = votes.map(vote => {
                     const chartId = `chart_${vote.id}`;
+                    const isExpired = vote.end_time && isVoteExpired(vote.end_time);
+                    
                     return `
                         <div class="vote-item">
-                            <h3>${vote.title} (완료)</h3>
-                            <p><strong>${getVoteTypeLabel(vote.type)}</strong></p>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <div>
+                                    <h3>${vote.title} ${isExpired && !vote.is_completed ? '(기간 만료)' : '(완료)'}</h3>
+                                    <p><strong>${getVoteTypeLabel(vote.type)}</strong></p>
+                                </div>
+                                ${currentUser.isAdmin ? `
+                                    <div>
+                                        <button class="btn btn-warning btn-small" onclick="clearVoteResults(${vote.id})" style="margin-right: 10px;">결과 초기화</button>
+                                        <button class="btn btn-danger btn-small" onclick="deleteVote(${vote.id})">삭제</button>
+                                    </div>
+                                ` : ''}
+                            </div>
                             <canvas id="${chartId}" class="chart-container"></canvas>
                         </div>
                     `;
@@ -345,39 +444,84 @@
             }
         }
 
-        function drawChart(vote) {
+        async function drawChart(vote) {
             const ctx = document.getElementById(`chart_${vote.id}`);
             if (!ctx) return;
 
-            const results = vote.results || [];
-            const labels = vote.options;
-            const data = labels.map((_, idx) => results.filter(r => r.option === idx).length);
+            try {
+                // 실시간 투표 결과 가져오기
+                const { data: results } = await supabase
+                    .from('vote_results')
+                    .select('*')
+                    .eq('vote_id', vote.id);
 
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: '투표 수',
-                        data: data,
-                        backgroundColor: '#667eea',
-                        borderColor: '#5a6fd8',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true }
+                const labels = vote.options;
+                const data = labels.map((_, idx) => results ? results.filter(r => r.option === idx).length : 0);
+                const totalVotes = data.reduce((sum, count) => sum + count, 0);
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '투표 수',
+                            data: data,
+                            backgroundColor: '#667eea',
+                            borderColor: '#5a6fd8',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `총 투표 수: ${totalVotes}명`
+                            }
+                        }
                     }
-                }
-            });
+                });
+            } catch (error) {
+                console.error('차트 그리기 실패:', error);
+            }
+        }
+
+        // 투표 결과 초기화
+        async function clearVoteResults(voteId) {
+            if (!confirm('정말로 이 투표의 모든 결과를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+                return;
+            }
+
+            try {
+                // 투표 결과 테이블에서 해당 투표의 모든 결과 삭제
+                const { error } = await supabase
+                    .from('vote_results')
+                    .delete()
+                    .eq('vote_id', voteId);
+
+                if (error) throw error;
+
+                // 투표 테이블의 results 필드도 null로 업데이트
+                await supabase
+                    .from('votes')
+                    .update({ results: null })
+                    .eq('id', voteId);
+
+                alert('투표 결과가 초기화되었습니다.');
+                loadCompletedVotes();
+            } catch (error) {
+                console.error('투표 결과 초기화 실패:', error);
+                alert('투표 결과 초기화 중 오류가 발생했습니다.');
+            }
         }
 
         // 투표 선택
         function selectOption(voteId, optionIdx) {
-            const options = document.querySelectorAll(`#options_${voteId} .vote-option`);
+            const options = document.querySelectorAll(`#options_${voteId} .vote-option:not(.disabled)`);
             options.forEach((opt, idx) => {
                 opt.classList.toggle('selected', idx === optionIdx);
             });
@@ -385,6 +529,19 @@
 
         // 투표하기
         async function vote(voteId) {
+            // 투표 기간 확인
+            const { data: voteData } = await supabase
+                .from('votes')
+                .select('end_time')
+                .eq('id', voteId)
+                .single();
+
+            if (voteData.end_time && isVoteExpired(voteData.end_time)) {
+                alert('투표 기간이 종료되었습니다.');
+                loadVotes();
+                return;
+            }
+
             const selectedOption = document.querySelector(`#options_${voteId} .vote-option.selected`);
             if (!selectedOption) {
                 alert('선택지를 선택해주세요.');
@@ -428,6 +585,14 @@
 
         // 투표 생성 모달
         function openVoteCreateModal() {
+            // 기본 종료 시간을 현재 시간 + 1일로 설정
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const dateStr = tomorrow.toISOString().split('T')[0];
+            const timeStr = '23:59';
+            
+            document.getElementById('voteEndDate').value = dateStr;
+            document.getElementById('voteEndTime').value = timeStr;
             document.getElementById('voteCreateModal').style.display = 'flex';
         }
 
@@ -435,9 +600,22 @@
             const type = document.getElementById('voteType').value;
             const title = document.getElementById('voteTitle').value.trim();
             const optionsText = document.getElementById('voteOptions').value.trim();
+            const endDate = document.getElementById('voteEndDate').value;
+            const endTime = document.getElementById('voteEndTime').value;
 
             if (!title || !optionsText) {
                 document.getElementById('createVoteError').textContent = '제목과 선택지를 입력해주세요.';
+                return;
+            }
+
+            if (!endDate || !endTime) {
+                document.getElementById('createVoteError').textContent = '투표 종료 날짜와 시간을 설정해주세요.';
+                return;
+            }
+
+            const endDateTime = new Date(`${endDate}T${endTime}`);
+            if (endDateTime <= new Date()) {
+                document.getElementById('createVoteError').textContent = '종료 시간은 현재 시간보다 나중이어야 합니다.';
                 return;
             }
 
@@ -460,7 +638,8 @@
                         title: title,
                         options: options,
                         created_by: currentUser.id,
-                        is_completed: false
+                        is_completed: false,
+                        end_time: endDateTime.toISOString()
                     });
 
                 if (error) throw error;
@@ -479,11 +658,18 @@
 
         // 투표 삭제
         async function deleteVote(voteId) {
-            if (!confirm('정말로 이 투표를 삭제하시겠습니까?')) return;
+            if (!confirm('정말로 이 투표를 삭제하시겠습니까?\n투표 결과도 모두 삭제됩니다.')) return;
 
             try {
                 await supabase.from('vote_results').delete().eq('vote_id', voteId);
                 await supabase.from('votes').delete().eq('id', voteId);
+                
+                // 타이머 정리
+                if (countdownTimers[voteId]) {
+                    clearInterval(countdownTimers[voteId]);
+                    delete countdownTimers[voteId];
+                }
+                
                 loadVotes();
                 loadCompletedVotes();
                 alert('투표가 삭제되었습니다.');
@@ -511,6 +697,12 @@
                         results: results 
                     })
                     .eq('id', voteId);
+
+                // 타이머 정리
+                if (countdownTimers[voteId]) {
+                    clearInterval(countdownTimers[voteId]);
+                    delete countdownTimers[voteId];
+                }
 
                 loadVotes();
                 loadCompletedVotes();
@@ -732,6 +924,11 @@
                 event.target.style.display = 'none';
             }
         }
+
+        // 페이지 언로드시 타이머 정리
+        window.addEventListener('beforeunload', () => {
+            Object.values(countdownTimers).forEach(timer => clearInterval(timer));
+        });
 
         // 초기 프로필 색상 설정
         selectProfile('#3498db');
