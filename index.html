@@ -20,11 +20,13 @@
         .btn:hover { background: #5a6fd8; transform: translateY(-2px); }
         .btn-danger { background: #e74c3c; }
         .btn-danger:hover { background: #c0392b; }
+        .btn-success { background: #27ae60; }
+        .btn-success:hover { background: #219a52; }
         .btn-small { padding: 8px 16px; font-size: 14px; }
         .vote-item { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 15px 0; }
         .vote-item.active { border-color: #667eea; background: #f0f3ff; }
         .chart-container { width: 100%; height: 300px; margin: 20px 0; }
-        .suggestions { position: fixed; top: 20px; right: 20px; }
+        .suggestions { position: fixed; top: 20px; right: 20px; z-index: 100; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
         .close { float: right; font-size: 24px; cursor: pointer; color: #999; }
@@ -40,6 +42,8 @@
         .hidden { display: none; }
         .error { color: #e74c3c; font-size: 14px; margin-top: 5px; }
         .success { color: #27ae60; font-size: 14px; margin-top: 5px; }
+        .admin-hint { background: #e8f5e8; border: 1px solid #c3e6c3; border-radius: 6px; padding: 10px; margin-top: 10px; font-size: 14px; color: #2d5016; }
+        .public-suggestions { background: white; border-radius: 12px; padding: 20px; margin: 20px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
@@ -80,10 +84,8 @@
                 <label>이름</label>
                 <input type="text" id="firstName" placeholder="이름을 입력하세요" maxlength="10">
             </div>
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" id="isAdmin"> 관리자 계정
-                </label>
+            <div class="admin-hint">
+                💡 관리자는 성: "서울", 이름: "명덕초등학교"를 입력하세요
             </div>
             <button class="btn" onclick="login()">입장하기</button>
             <div id="loginError" class="error"></div>
@@ -118,6 +120,12 @@
                 <h2>📈 투표 결과</h2>
                 <div id="completedVotes"></div>
             </div>
+
+            <!-- 공개 건의사항 -->
+            <div class="public-suggestions">
+                <h2>💬 건의사항</h2>
+                <div id="publicSuggestionsList"></div>
+            </div>
         </div>
     </div>
 
@@ -131,6 +139,9 @@
                 <select id="voteType">
                     <option value="meal">급식 투표</option>
                     <option value="music">음악방송 투표</option>
+                    <option value="activity">체험활동 투표</option>
+                    <option value="event">학급행사 투표</option>
+                    <option value="other">기타</option>
                 </select>
             </div>
             <div class="form-group">
@@ -172,12 +183,21 @@
         </div>
     </div>
 
-    <!-- 건의사항 관리 모달 -->
+    <!-- 건의사항 관리 모달 (관리자용) -->
     <div id="suggestionsViewModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('suggestionsViewModal')">&times;</span>
             <h3>📋 건의사항 관리</h3>
             <div id="suggestionsList"></div>
+        </div>
+    </div>
+
+    <!-- 건의사항 보기 모달 (일반 사용자용) -->
+    <div id="publicSuggestionsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('publicSuggestionsModal')">&times;</span>
+            <h3>📋 건의사항 보기</h3>
+            <div id="publicSuggestionsModalList"></div>
         </div>
     </div>
 
@@ -203,7 +223,6 @@
             const classNum = document.getElementById('class').value;
             const lastName = document.getElementById('lastName').value.trim();
             const firstName = document.getElementById('firstName').value.trim();
-            const isAdmin = document.getElementById('isAdmin').checked;
 
             if (!grade || !classNum || !lastName || !firstName) {
                 document.getElementById('loginError').textContent = '모든 정보를 입력해주세요.';
@@ -214,6 +233,9 @@
                 document.getElementById('loginError').textContent = '부적절한 이름입니다.';
                 return;
             }
+
+            // 관리자 인증: 성이 "서울"이고 이름이 "명덕초등학교"인 경우
+            const isAdmin = (lastName === '서울' && firstName === '명덕초등학교');
 
             currentUser = {
                 grade: parseInt(grade),
@@ -233,6 +255,7 @@
             
             loadVotes();
             loadCompletedVotes();
+            loadPublicSuggestions();
         }
 
         function showUserInfo() {
@@ -261,7 +284,7 @@
                 votesList.innerHTML = votes.map(vote => `
                     <div class="vote-item">
                         <h3>${vote.title}</h3>
-                        <p><strong>${vote.type === 'meal' ? '급식투표' : '음악방송투표'}</strong></p>
+                        <p><strong>${getVoteTypeLabel(vote.type)}</strong></p>
                         <div class="vote-options" id="options_${vote.id}">
                             ${vote.options.map((option, idx) => 
                                 `<div class="vote-option" onclick="selectOption(${vote.id}, ${idx})">${option}</div>`
@@ -275,6 +298,17 @@
             } catch (error) {
                 console.error('투표 로드 실패:', error);
             }
+        }
+
+        function getVoteTypeLabel(type) {
+            const labels = {
+                'meal': '급식투표',
+                'music': '음악방송투표',
+                'activity': '체험활동투표',
+                'event': '학급행사투표',
+                'other': '기타투표'
+            };
+            return labels[type] || '투표';
         }
 
         // 완료된 투표 결과 로드
@@ -297,7 +331,7 @@
                     return `
                         <div class="vote-item">
                             <h3>${vote.title} (완료)</h3>
-                            <p><strong>${vote.type === 'meal' ? '급식투표' : '음악방송투표'}</strong></p>
+                            <p><strong>${getVoteTypeLabel(vote.type)}</strong></p>
                             <canvas id="${chartId}" class="chart-container"></canvas>
                         </div>
                     `;
@@ -533,6 +567,7 @@
                 closeModal('suggestionModal');
                 document.getElementById('suggestionContent').value = '';
                 document.getElementById('suggestionError').textContent = '';
+                loadPublicSuggestions();
                 alert('건의사항이 제출되었습니다!');
             } catch (error) {
                 console.error('건의사항 제출 실패:', error);
@@ -540,7 +575,74 @@
             }
         }
 
-        // 건의사항 관리
+        // 공개 건의사항 로드 (메인 페이지용)
+        async function loadPublicSuggestions() {
+            try {
+                const { data: suggestions } = await supabase
+                    .from('suggestions')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                const suggestionsList = document.getElementById('publicSuggestionsList');
+                if (!suggestions || suggestions.length === 0) {
+                    suggestionsList.innerHTML = '<p>건의사항이 없습니다.</p>';
+                } else {
+                    suggestionsList.innerHTML = suggestions.map(suggestion => `
+                        <div class="suggestion-item">
+                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                <div class="profile-circle" style="background: ${suggestion.profile_color};">
+                                    ${suggestion.user_name[0]}
+                                </div>
+                                <div>
+                                    <strong>${suggestion.user_grade}학년 ${suggestion.user_class}반 ${suggestion.user_name}</strong>
+                                    <br><small>${new Date(suggestion.created_at).toLocaleString()}</small>
+                                </div>
+                            </div>
+                            <p>${suggestion.content}</p>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('공개 건의사항 로드 실패:', error);
+            }
+        }
+
+        // 건의사항 보기 (일반 사용자용)
+        async function viewAllSuggestions() {
+            try {
+                const { data: suggestions } = await supabase
+                    .from('suggestions')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                const suggestionsList = document.getElementById('publicSuggestionsModalList');
+                if (!suggestions || suggestions.length === 0) {
+                    suggestionsList.innerHTML = '<p>건의사항이 없습니다.</p>';
+                } else {
+                    suggestionsList.innerHTML = suggestions.map(suggestion => `
+                        <div class="suggestion-item">
+                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                <div class="profile-circle" style="background: ${suggestion.profile_color};">
+                                    ${suggestion.user_name[0]}
+                                </div>
+                                <div>
+                                    <strong>${suggestion.user_grade}학년 ${suggestion.user_class}반 ${suggestion.user_name}</strong>
+                                    <br><small>${new Date(suggestion.created_at).toLocaleString()}</small>
+                                </div>
+                            </div>
+                            <p>${suggestion.content}</p>
+                        </div>
+                    `).join('');
+                }
+
+                document.getElementById('publicSuggestionsModal').style.display = 'flex';
+            } catch (error) {
+                console.error('건의사항 로드 실패:', error);
+            }
+        }
+
+        // 건의사항 관리 (관리자용)
         async function viewSuggestions() {
             try {
                 const { data: suggestions } = await supabase
@@ -581,6 +683,7 @@
             try {
                 await supabase.from('suggestions').delete().eq('id', suggestionId);
                 viewSuggestions(); // 목록 새로고침
+                loadPublicSuggestions(); // 메인 페이지도 새로고침
             } catch (error) {
                 console.error('건의사항 삭제 실패:', error);
                 alert('삭제 중 오류가 발생했습니다.');
