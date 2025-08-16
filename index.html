@@ -156,7 +156,7 @@
                 <input type="text" id="voteTitle" placeholder="투표 제목을 입력하세요">
             </div>
             <div class="form-group">
-                <label>투표 기간</label>
+                <label>투표 기간 (선택사항)</label>
                 <div class="datetime-group">
                     <div>
                         <label style="font-size: 14px;">종료 날짜</label>
@@ -167,6 +167,7 @@
                         <input type="time" id="voteEndTime">
                     </div>
                 </div>
+                <small style="color: #666;">기간을 설정하지 않으면 수동으로 투표를 종료할 때까지 진행됩니다.</small>
             </div>
             <div class="form-group">
                 <label>선택지 (각 줄에 하나씩)</label>
@@ -312,11 +313,16 @@
         // 투표 로드
         async function loadVotes() {
             try {
-                const { data: votes } = await supabase
+                const { data: votes, error } = await supabase
                     .from('votes')
                     .select('*')
                     .eq('is_completed', false)
                     .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error('투표 로드 에러:', error);
+                    throw error;
+                }
 
                 const votesList = document.getElementById('votesList');
                 if (!votes || votes.length === 0) {
@@ -329,7 +335,8 @@
                 countdownTimers = {};
 
                 votesList.innerHTML = votes.map(vote => {
-                    const expired = vote.end_time && isVoteExpired(vote.end_time);
+                    // end_time이 있는 경우에만 만료 체크
+                    const expired = vote.end_time ? isVoteExpired(vote.end_time) : false;
                     const timeLeft = vote.end_time ? formatTimeLeft(vote.end_time) : '';
                     
                     return `
@@ -337,7 +344,7 @@
                             ${expired ? '<div class="expired-badge">투표 종료</div>' : ''}
                             <h3>${vote.title}</h3>
                             <p><strong>${getVoteTypeLabel(vote.type)}</strong></p>
-                            ${vote.end_time ? `<div class="time-left" id="timeLeft_${vote.id}">${timeLeft}</div>` : ''}
+                            ${vote.end_time ? `<div class="time-left" id="timeLeft_${vote.id}">${timeLeft}</div>` : '<div class="time-left" style="color: #28a745;">기간 제한 없음</div>'}
                             <div class="vote-options" id="options_${vote.id}">
                                 ${vote.options.map((option, idx) => 
                                     `<div class="vote-option ${expired ? 'disabled' : ''}" 
@@ -355,7 +362,7 @@
                     `;
                 }).join('');
 
-                // 실시간 카운트다운 시작
+                // 실시간 카운트다운 시작 (end_time이 있고 만료되지 않은 투표만)
                 votes.forEach(vote => {
                     if (vote.end_time && !isVoteExpired(vote.end_time)) {
                         startCountdown(vote.id, vote.end_time);
@@ -363,6 +370,8 @@
                 });
             } catch (error) {
                 console.error('투표 로드 실패:', error);
+                const votesList = document.getElementById('votesList');
+                votesList.innerHTML = `<p style="color: #e74c3c;">투표를 불러오는데 실패했습니다: ${error.message}</p>`;
             }
         }
 
@@ -399,29 +408,34 @@
         // 완료된 투표 결과 로드
         async function loadCompletedVotes() {
             try {
-                // 완료된 투표와 기간이 지난 투표 모두 가져오기
-                const { data: votes } = await supabase
+                // 완료된 투표만 가져오기
+                const { data: completedVotes, error: completedError } = await supabase
                     .from('votes')
                     .select('*')
-                    .or('is_completed.eq.true,end_time.lt.' + new Date().toISOString())
-                    .order('completed_at', { ascending: false });
+                    .eq('is_completed', true)
+                    .order('created_at', { ascending: false });
 
-                const completedVotes = document.getElementById('completedVotes');
-                if (!votes || votes.length === 0) {
-                    completedVotes.innerHTML = '<p>완료된 투표가 없습니다.</p>';
+                if (completedError) {
+                    console.error('완료된 투표 로드 에러:', completedError);
+                    throw completedError;
+                }
+
+                const completedVotesDiv = document.getElementById('completedVotes');
+                if (!completedVotes || completedVotes.length === 0) {
+                    completedVotesDiv.innerHTML = '<p>완료된 투표가 없습니다.</p>';
                     return;
                 }
 
-                completedVotes.innerHTML = votes.map(vote => {
+                completedVotesDiv.innerHTML = completedVotes.map(vote => {
                     const chartId = `chart_${vote.id}`;
-                    const isExpired = vote.end_time && isVoteExpired(vote.end_time);
                     
                     return `
                         <div class="vote-item">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                                 <div>
-                                    <h3>${vote.title} ${isExpired && !vote.is_completed ? '(기간 만료)' : '(완료)'}</h3>
+                                    <h3>${vote.title} (완료)</h3>
                                     <p><strong>${getVoteTypeLabel(vote.type)}</strong></p>
+                                    ${vote.completed_at ? `<small style="color: #666;">완료일: ${new Date(vote.completed_at).toLocaleString('ko-KR')}</small>` : ''}
                                 </div>
                                 ${currentUser.isAdmin ? `
                                     <div>
@@ -436,11 +450,13 @@
                 }).join('');
 
                 // 차트 그리기
-                votes.forEach(vote => {
+                completedVotes.forEach(vote => {
                     setTimeout(() => drawChart(vote), 100);
                 });
             } catch (error) {
                 console.error('완료된 투표 로드 실패:', error);
+                const completedVotesDiv = document.getElementById('completedVotes');
+                completedVotesDiv.innerHTML = `<p style="color: #e74c3c;">완료된 투표를 불러오는데 실패했습니다: ${error.message}</p>`;
             }
         }
 
@@ -529,34 +545,45 @@
 
         // 투표하기
         async function vote(voteId) {
-            // 투표 기간 확인
-            const { data: voteData } = await supabase
-                .from('votes')
-                .select('end_time')
-                .eq('id', voteId)
-                .single();
-
-            if (voteData.end_time && isVoteExpired(voteData.end_time)) {
-                alert('투표 기간이 종료되었습니다.');
-                loadVotes();
-                return;
-            }
-
-            const selectedOption = document.querySelector(`#options_${voteId} .vote-option.selected`);
-            if (!selectedOption) {
-                alert('선택지를 선택해주세요.');
-                return;
-            }
-
-            const optionIdx = Array.from(selectedOption.parentNode.children).indexOf(selectedOption);
-
             try {
+                // 투표 정보 가져와서 기간 확인
+                const { data: voteData, error: voteError } = await supabase
+                    .from('votes')
+                    .select('end_time')
+                    .eq('id', voteId)
+                    .single();
+
+                if (voteError) {
+                    console.error('투표 정보 조회 실패:', voteError);
+                    throw voteError;
+                }
+
+                // 기간이 설정되어 있고 만료된 경우 체크
+                if (voteData.end_time && isVoteExpired(voteData.end_time)) {
+                    alert('투표 기간이 종료되었습니다.');
+                    loadVotes();
+                    return;
+                }
+
+                const selectedOption = document.querySelector(`#options_${voteId} .vote-option.selected`);
+                if (!selectedOption) {
+                    alert('선택지를 선택해주세요.');
+                    return;
+                }
+
+                const optionIdx = Array.from(selectedOption.parentNode.children).indexOf(selectedOption);
+
                 // 중복 투표 확인
-                const { data: existingVote } = await supabase
+                const { data: existingVote, error: checkError } = await supabase
                     .from('vote_results')
                     .select('*')
                     .eq('vote_id', voteId)
                     .eq('user_id', currentUser.id);
+
+                if (checkError) {
+                    console.error('중복 투표 확인 실패:', checkError);
+                    throw checkError;
+                }
 
                 if (existingVote && existingVote.length > 0) {
                     alert('이미 투표하셨습니다.');
@@ -564,7 +591,7 @@
                 }
 
                 // 투표 저장
-                const { error } = await supabase
+                const { error: insertError } = await supabase
                     .from('vote_results')
                     .insert({
                         vote_id: voteId,
@@ -573,13 +600,16 @@
                         option: optionIdx
                     });
 
-                if (error) throw error;
+                if (insertError) {
+                    console.error('투표 저장 실패:', insertError);
+                    throw insertError;
+                }
 
                 alert('투표가 완료되었습니다!');
                 selectedOption.classList.remove('selected');
             } catch (error) {
                 console.error('투표 실패:', error);
-                alert('투표 중 오류가 발생했습니다.');
+                alert(`투표 중 오류가 발생했습니다: ${error.message}`);
             }
         }
 
