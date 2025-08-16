@@ -1,418 +1,605 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <link rel="icon" href="/favicon.ico" type="image/x-icon">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>서울명덕초등학교</title>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <!-- Gun.js CDN for real-time data synchronization -->
-    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* 기존 CSS 스타일은 변경 없이 유지 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: '맑은 고딕', sans-serif; background: #f4f7f6; color: #333; line-height: 1.6; }
-        .container { max-width: 1000px; margin: 20px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 20px; border-bottom: 1px solid #eee; margin-bottom: 30px; }
-        .header-left { display: flex; align-items: center; }
-        .logo { width: 60px; height: 60px; border-radius: 50%; overflow: hidden; margin-right: 15px; border: 3px solid #62C18F; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-        .logo img { width: 100%; height: 100%; object-fit: cover; }
-        .school-name { font-size: 28px; font-weight: bold; color: #333; text-shadow: 1px 1px 2px rgba(0,0,0,0.05); }
-        .nav { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; justify-content: flex-start; }
-        .btn { padding: 10px 20px; border: none; border-radius: 25px; cursor: pointer; font-size: 15px; font-weight: bold; transition: all 0.3s ease; }
-        .btn-primary { background: #62C18F; color: white; box-shadow: 0 4px 8px rgba(98, 193, 143, 0.3); }
-        .btn-primary:hover { background: #4CAF80; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(98, 193, 143, 0.4); }
-        .btn-secondary { background: #e0e0e0; color: #555; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .btn-secondary:hover { background: #d0d0d0; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-        .btn-danger { background: #ff4444; color: white; }
-        .btn-danger:hover { background: #cc0000; transform: translateY(-2px); }
-
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 40px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); text-align: center; position: relative; }
-        .modal h2 { margin-bottom: 25px; color: #333; font-size: 26px; }
-        .form-group { margin-bottom: 20px; text-align: left; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; font-size: 15px; }
-        input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; transition: border-color 0.3s; }
-        input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus { border-color: #62C18F; outline: none; box-shadow: 0 0 0 3px rgba(98, 193, 143, 0.2); }
-        textarea { resize: vertical; min-height: 80px; }
-        .close { position: absolute; top: 15px; right: 20px; font-size: 32px; color: #aaa; cursor: pointer; transition: color 0.3s; }
-        .close:hover { color: #555; }
-
-        .section-card { background: #ffffff; padding: 30px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
-        .section-card h3 { font-size: 22px; color: #333; margin-bottom: 20px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
-        
-        .comment-section { margin-top: 40px; }
-        .comment { background: #f9f9f9; padding: 15px 20px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #eee; transition: all 0.3s ease; }
-        .comment:hover { background: #f5f5f5; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .comment-author { font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; color: #444; font-size: 15px; }
-        .profile { width: 34px; height: 34px; background: #62C18F; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: bold; margin-right: 12px; flex-shrink: 0; }
-        .comment-text { font-size: 16px; color: #333; word-wrap: break-word; }
-        .comment-meta { font-size: 12px; color: #888; margin-top: 5px; display: flex; justify-content: space-between; align-items: center; }
-        .comment-meta button { background: none; border: none; color: #ff6666; font-size: 12px; cursor: pointer; padding: 0 5px; transition: color 0.3s; }
-        .comment-meta button:hover { color: #cc0000; }
-        .comment-options { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
-        
-        .login-section, .comment-input-section { margin-top: 30px; padding: 20px; background: #f0f8ff; border-radius: 10px; border: 1px solid #e0efff; }
-        .login-section h3, .comment-input-section h3 { margin-bottom: 15px; color: #0056b3; }
-        .login-info { margin-top: 15px; font-weight: bold; color: #28a745; }
-        .error-message { color: #dc3545; margin-top: 10px; font-size: 14px; }
-
-
-        .vote-section { margin: 30px 0; padding: 30px; border: 1px solid #ddd; } /* 잘린 스타일 마저 추가 */
+        body { font-family: '맑은 고딕', sans-serif; background: #f5f7fa; line-height: 1.6; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        .login-card, .main-card { background: white; border-radius: 12px; padding: 30px; margin: 20px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        input, select, textarea { width: 100%; padding: 12px; border: 2px solid #e1e5e9; border-radius: 8px; font-size: 16px; }
+        input:focus, select:focus, textarea:focus { border-color: #667eea; outline: none; }
+        .btn { background: #667eea; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; transition: all 0.3s; }
+        .btn:hover { background: #5a6fd8; transform: translateY(-2px); }
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-small { padding: 8px 16px; font-size: 14px; }
+        .vote-item { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 15px 0; }
+        .vote-item.active { border-color: #667eea; background: #f0f3ff; }
+        .chart-container { width: 100%; height: 300px; margin: 20px 0; }
+        .suggestions { position: fixed; top: 20px; right: 20px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+        .close { float: right; font-size: 24px; cursor: pointer; color: #999; }
+        .close:hover { color: #333; }
+        .suggestion-item { background: #f8f9fa; border-radius: 8px; padding: 15px; margin: 10px 0; border-left: 4px solid #667eea; }
+        .profile-circle { width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 10px; }
+        .user-info { background: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .vote-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+        .vote-option { background: white; border: 2px solid #e9ecef; border-radius: 8px; padding: 15px; cursor: pointer; text-align: center; transition: all 0.3s; }
+        .vote-option:hover { border-color: #667eea; background: #f0f3ff; }
+        .vote-option.selected { border-color: #667eea; background: #667eea; color: white; }
+        .admin-panel { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .hidden { display: none; }
+        .error { color: #e74c3c; font-size: 14px; margin-top: 5px; }
+        .success { color: #27ae60; font-size: 14px; margin-top: 5px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <div class="header-left">
-                <div class="logo"><img src="https://via.placeholder.com/60" alt="로고"></div>
-                <h1 class="school-name">서울명덕초등학교</h1>
-            </div>
-            <!-- 기타 헤더 요소 -->
-        </header>
+    <div class="header">
+        <h1>🏫 서울명덕초등학교</h1>
+        <p>학급 투표 및 건의 시스템</p>
+    </div>
 
-        <nav class="nav">
-            <button class="btn btn-primary">학교 소개</button>
-            <button class="btn btn-secondary">학교 생활</button>
-            <button class="btn btn-secondary">교육 활동</button>
-            <button class="btn btn-secondary">열린 마당</button>
-            <button class="btn btn-secondary">공지사항</button>
-        </nav>
+    <!-- 로그인 화면 -->
+    <div id="loginScreen" class="container">
+        <div class="login-card">
+            <h2>학생 정보 입력</h2>
+            <div class="form-group">
+                <label>학년</label>
+                <select id="grade">
+                    <option value="">선택하세요</option>
+                    <option value="1">1학년</option>
+                    <option value="2">2학년</option>
+                    <option value="3">3학년</option>
+                    <option value="4">4학년</option>
+                    <option value="5">5학년</option>
+                    <option value="6">6학년</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>반</label>
+                <select id="class">
+                    <option value="">선택하세요</option>
+                    <option value="1">1반</option><option value="2">2반</option><option value="3">3반</option><option value="4">4반</option><option value="5">5반</option>
+                    <option value="6">6반</option><option value="7">7반</option><option value="8">8반</option><option value="9">9반</option><option value="10">10반</option><option value="11">11반</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>성</label>
+                <input type="text" id="lastName" placeholder="성을 입력하세요" maxlength="10">
+            </div>
+            <div class="form-group">
+                <label>이름</label>
+                <input type="text" id="firstName" placeholder="이름을 입력하세요" maxlength="10">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="isAdmin"> 관리자 계정
+                </label>
+            </div>
+            <button class="btn" onclick="login()">입장하기</button>
+            <div id="loginError" class="error"></div>
+        </div>
+    </div>
 
-        <section class="section-card login-section">
-            <h3>로그인 / 회원가입 (Gun.js User)</h3>
-            <div class="form-group">
-                <label for="username">사용자 이름:</label>
-                <input type="text" id="username" placeholder="사용자 이름 입력">
-            </div>
-            <div class="form-group">
-                <label for="password">비밀번호:</label>
-                <input type="password" id="password" placeholder="비밀번호 입력">
-            </div>
-            <div class="form-group">
-                <label for="isAdminUser">관리자 계정인가요? (가입시 선택):</label>
-                <input type="checkbox" id="isAdminUser">
-            </div>
-            <button class="btn btn-primary" onclick="signUp()">회원가입</button>
-            <button class="btn btn-secondary" onclick="login()">로그인</button>
-            <button class="btn btn-danger" onclick="logout()">로그아웃</button>
-            <div id="loginStatus" class="login-info"></div>
-            <div id="loginError" class="error-message"></div>
-        </section>
+    <!-- 메인 화면 -->
+    <div id="mainScreen" class="hidden">
+        <div class="suggestions">
+            <button class="btn btn-small" onclick="openSuggestionModal()">💬 건의하기</button>
+        </div>
 
-        <section class="section-card comment-input-section">
-            <h3>건의함 (댓글)</h3>
-            <div class="form-group">
-                <label for="commentAuthor">작성자:</label>
-                <input type="text" id="commentAuthor" placeholder="작성자 이름" maxlength="20">
-            </div>
-            <div class="form-group">
-                <label for="commentContent">내용 (<span id="commentCharCount">0</span>/150자):</label>
-                <textarea id="commentContent" placeholder="여기에 건의사항을 작성해주세요..." maxlength="150"></textarea>
-                <div id="commentError" class="error-message"></div>
-            </div>
-            <button class="btn btn-primary" onclick="addComment()">건의하기</button>
-            <div id="lastCommentTime" style="font-size: 12px; color: #888; margin-top: 5px;"></div>
-        </section>
+        <div class="container">
+            <div id="userInfo" class="user-info"></div>
 
-        <section class="section-card comment-section">
-            <h3>최신 건의사항 (총 <span id="commentCount">0</span>개)</h3>
-            <div id="commentsList">
-                <!-- 댓글들이 여기에 실시간으로 추가됩니다. -->
+            <!-- 관리자 패널 -->
+            <div id="adminPanel" class="admin-panel hidden">
+                <h3>🔧 관리자 패널</h3>
+                <button class="btn btn-small" onclick="openVoteCreateModal()">투표 만들기</button>
+                <button class="btn btn-danger btn-small" onclick="viewSuggestions()">건의사항 관리</button>
             </div>
-        </section>
+
+            <!-- 투표 목록 -->
+            <div class="main-card">
+                <h2>📊 현재 진행중인 투표</h2>
+                <div id="votesList"></div>
+            </div>
+
+            <!-- 완료된 투표 결과 -->
+            <div class="main-card">
+                <h2>📈 투표 결과</h2>
+                <div id="completedVotes"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 투표 생성 모달 -->
+    <div id="voteCreateModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('voteCreateModal')">&times;</span>
+            <h3>새 투표 만들기</h3>
+            <div class="form-group">
+                <label>투표 유형</label>
+                <select id="voteType">
+                    <option value="meal">급식 투표</option>
+                    <option value="music">음악방송 투표</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>제목</label>
+                <input type="text" id="voteTitle" placeholder="투표 제목을 입력하세요">
+            </div>
+            <div class="form-group">
+                <label>선택지 (각 줄에 하나씩)</label>
+                <textarea id="voteOptions" rows="5" placeholder="선택지1&#10;선택지2&#10;선택지3"></textarea>
+            </div>
+            <button class="btn" onclick="createVote()">투표 생성</button>
+            <div id="createVoteError" class="error"></div>
+        </div>
+    </div>
+
+    <!-- 건의사항 모달 -->
+    <div id="suggestionModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('suggestionModal')">&times;</span>
+            <h3>💬 건의하기</h3>
+            <div class="form-group">
+                <label>프로필 색상</label>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div class="profile-circle" style="background: #e74c3c; cursor: pointer;" onclick="selectProfile('#e74c3c')">A</div>
+                    <div class="profile-circle" style="background: #3498db; cursor: pointer;" onclick="selectProfile('#3498db')">B</div>
+                    <div class="profile-circle" style="background: #2ecc71; cursor: pointer;" onclick="selectProfile('#2ecc71')">C</div>
+                    <div class="profile-circle" style="background: #f39c12; cursor: pointer;" onclick="selectProfile('#f39c12')">D</div>
+                    <div class="profile-circle" style="background: #9b59b6; cursor: pointer;" onclick="selectProfile('#9b59b6')">E</div>
+                    <div class="profile-circle" style="background: #34495e; cursor: pointer;" onclick="selectProfile('#34495e')">F</div>
+                </div>
+                <input type="hidden" id="selectedProfile" value="#3498db">
+            </div>
+            <div class="form-group">
+                <label>건의 내용</label>
+                <textarea id="suggestionContent" rows="4" placeholder="건의사항을 작성해주세요..." maxlength="500"></textarea>
+            </div>
+            <button class="btn" onclick="submitSuggestion()">건의하기</button>
+            <div id="suggestionError" class="error"></div>
+        </div>
+    </div>
+
+    <!-- 건의사항 관리 모달 -->
+    <div id="suggestionsViewModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('suggestionsViewModal')">&times;</span>
+            <h3>📋 건의사항 관리</h3>
+            <div id="suggestionsList"></div>
+        </div>
     </div>
 
     <script>
-        // Gun.js 인스턴스 초기화
-        // P2P 연결을 위해 릴레이 서버를 지정할 수 있습니다. (예: ['https://gun-peers.herokuapp.com/gun'])
-        // 여기서는 기본 로컬 스토리지를 사용합니다.
-        const db = Gun();
-        const user = db.user(); // Gun.js 사용자 인스턴스
-        let currentUserIsHost = false; // 현재 로그인한 사용자가 관리자인지 여부
-        let lastCommentTimestamp = 0; // 도배 방지를 위한 마지막 댓글 작성 시간
+        // Supabase 초기화 - 실제 프로젝트에서는 환경변수로 관리하세요
+        const SUPABASE_URL = 'https://xyhdojgynscpjxlqnrul.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5aGRvamd5bnNjcGp4bHFucnVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzMDI0MjAsImV4cCI6MjA3MDg3ODQyMH0.pGZzTeO_vbVIJioICKMyUIFUiHhKkTPOyDoM5QygcNw';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // DOM 요소 가져오기
-        const commentsList = document.getElementById('commentsList');
-        const commentAuthorInput = document.getElementById('commentAuthor');
-        const commentContentInput = document.getElementById('commentContent');
-        const commentCharCount = document.getElementById('commentCharCount');
-        const commentErrorDiv = document.getElementById('commentError');
-        const loginStatusDiv = document.getElementById('loginStatus');
-        const loginErrorDiv = document.getElementById('loginError');
-        const commentCountSpan = document.getElementById('commentCount');
-        const lastCommentTimeDiv = document.getElementById('lastCommentTime');
+        let currentUser = null;
+        let selectedProfileColor = '#3498db';
 
-        // --- 사용자 인증 (로그인/회원가입) 관련 기능 ---
-
-        // 현재 로그인 상태 확인 및 isHost 값 로드
-        user.recall({ sessionStorage: true }).on(ack => {
-            if (ack.err) {
-                console.warn("로그인 정보 로드 실패:", ack.err);
-                loginStatusDiv.textContent = '로그아웃 상태입니다.';
-                currentUserIsHost = false;
-            } else if (ack.pub) {
-                user.get('profile').get('isAdmin').on(isAdmin => {
-                    currentUserIsHost = isAdmin === true;
-                    loginStatusDiv.textContent = `환영합니다, ${ack.alias}! 당신은 ${currentUserIsHost ? '관리자' : '일반 사용자'}입니다.`;
-                    console.log("현재 사용자 isHost:", currentUserIsHost);
-                });
-            } else {
-                loginStatusDiv.textContent = '로그아웃 상태입니다.';
-                currentUserIsHost = false;
-            }
-            updateCommentSectionVisibility(); // 로그인 상태에 따라 댓글 입력/삭제 버튼 표시 여부 업데이트
-        });
-
-        function signUp() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const isAdmin = document.getElementById('isAdminUser').checked;
-            loginErrorDiv.textContent = ''; // 에러 메시지 초기화
-
-            if (!username || !password) {
-                loginErrorDiv.textContent = '사용자 이름과 비밀번호를 모두 입력해주세요.';
-                return;
-            }
-
-            user.create(username, password, ack => {
-                if (ack.err) {
-                    loginErrorDiv.textContent = `회원가입 실패: ${ack.err}`;
-                } else {
-                    alert('회원가입 성공!');
-                    // 프로필 정보에 isAdmin 저장
-                    user.get('profile').put({ alias: username, isAdmin: isAdmin });
-                    // 바로 로그인 시도
-                    user.auth(username, password, authAck => {
-                        if (authAck.err) {
-                            loginErrorDiv.textContent = `회원가입 후 자동 로그인 실패: ${authAck.err}`;
-                        } else {
-                            loginStatusDiv.textContent = `환영합니다, ${username}! 당신은 ${isAdmin ? '관리자' : '일반 사용자'}입니다.`;
-                            currentUserIsHost = isAdmin;
-                            updateCommentSectionVisibility();
-                        }
-                    });
-                }
-            });
-        }
-
-        function login() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            loginErrorDiv.textContent = ''; // 에러 메시지 초기화
-
-            if (!username || !password) {
-                loginErrorDiv.textContent = '사용자 이름과 비밀번호를 모두 입력해주세요.';
-                return;
-            }
-
-            user.auth(username, password, ack => {
-                if (ack.err) {
-                    loginErrorDiv.textContent = `로그인 실패: ${ack.err}`;
-                } else {
-                    user.get('profile').get('isAdmin').on(isAdmin => {
-                        currentUserIsHost = isAdmin === true; // isAdmin이 없으면 false
-                        loginStatusDiv.textContent = `환영합니다, ${username}! 당신은 ${currentUserIsHost ? '관리자' : '일반 사용자'}입니다.`;
-                        updateCommentSectionVisibility();
-                    });
-                }
-            });
-        }
-
-        function logout() {
-            user.leave();
-            currentUserIsHost = false;
-            loginStatusDiv.textContent = '로그아웃 되었습니다.';
-            loginErrorDiv.textContent = '';
-            updateCommentSectionVisibility();
-            console.log("로그아웃 완료");
-        }
+        // 욕설 필터링
+        const badWords = ['바보', '멍청이', '죽어', '꺼져', '시발', '병신', '개새끼', '씨발'];
         
-        // --- 댓글 기능 ---
+        function containsBadWords(text) {
+            return badWords.some(word => text.toLowerCase().includes(word));
+        }
 
-        // 댓글 입력창 글자 수 카운트
-        commentContentInput.addEventListener('input', () => {
-            commentCharCount.textContent = commentContentInput.value.length;
-        });
+        // 로그인
+        async function login() {
+            const grade = document.getElementById('grade').value;
+            const classNum = document.getElementById('class').value;
+            const lastName = document.getElementById('lastName').value.trim();
+            const firstName = document.getElementById('firstName').value.trim();
+            const isAdmin = document.getElementById('isAdmin').checked;
 
-        // 댓글 추가 함수
-        function addComment() {
-            const author = commentAuthorInput.value.trim();
-            const content = commentContentInput.value.trim();
-            const now = Date.now();
-            commentErrorDiv.textContent = '';
-
-            // 도배 방지: 최소 5초 간격
-            const MIN_COMMENT_INTERVAL = 5 * 1000; // 5초
-            if (now - lastCommentTimestamp < MIN_COMMENT_INTERVAL) {
-                commentErrorDiv.textContent = `도배 방지를 위해 잠시 후 다시 작성해주세요 (${Math.ceil((MIN_COMMENT_INTERVAL - (now - lastCommentTimestamp)) / 1000)}초 남음).`;
+            if (!grade || !classNum || !lastName || !firstName) {
+                document.getElementById('loginError').textContent = '모든 정보를 입력해주세요.';
                 return;
             }
 
-            if (!author || !content) {
-                commentErrorDiv.textContent = '작성자와 내용을 모두 입력해주세요.';
+            if (containsBadWords(lastName + firstName)) {
+                document.getElementById('loginError').textContent = '부적절한 이름입니다.';
                 return;
             }
 
-            if (content.length > 150) { // 최대 입력 글자 수 제한 (maxlength는 HTML에서 이미 설정)
-                commentErrorDiv.textContent = '댓글은 150자 이내로 작성해주세요.';
-                return;
-            }
-            
-            // Gun.js를 통한 댓글 저장
-            const commentId = Gun.SEA.pair().pub; // 각 댓글에 고유 ID 부여 (임시로 pub key 사용)
-            const commentData = {
-                id: commentId,
-                author: author,
-                content: content,
-                timestamp: now,
-                owner: user.is && user.is.pub ? user.is.pub : null // 로그인한 사용자가 있다면 소유자 ID 저장
+            currentUser = {
+                grade: parseInt(grade),
+                class: parseInt(classNum),
+                name: lastName + firstName,
+                isAdmin: isAdmin,
+                id: `${grade}${classNum}_${lastName}${firstName}`
             };
 
-            // 'comments' 컬렉션에 댓글 추가
-            db.get('comments').get(commentId).put(commentData, ack => {
-                if (ack.err) {
-                    commentErrorDiv.textContent = `댓글 저장 실패: ${ack.err}`;
-                    console.error("댓글 저장 에러:", ack.err);
-                } else {
-                    commentAuthorInput.value = '';
-                    commentContentInput.value = '';
-                    commentCharCount.textContent = '0';
-                    lastCommentTimestamp = now;
-                    lastCommentTimeDiv.textContent = `마지막 댓글 작성: ${new Date(now).toLocaleTimeString()}`;
-                    console.log('댓글이 성공적으로 추가되었습니다:', commentData);
-                }
-            });
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainScreen').classList.remove('hidden');
+            
+            showUserInfo();
+            if (isAdmin) {
+                document.getElementById('adminPanel').classList.remove('hidden');
+            }
+            
+            loadVotes();
+            loadCompletedVotes();
         }
 
-        // 댓글 삭제 함수
-        // Gun.js에서는 특정 노드를 'null'로 설정하면 삭제됩니다.
-        function deleteComment(commentId, commentOwnerPub) {
-            if (!user.is) { // 로그인 여부 확인
-                alert('로그인 후 이용해주세요.');
-                return;
+        function showUserInfo() {
+            const userInfo = `
+                <strong>${currentUser.grade}학년 ${currentUser.class}반 ${currentUser.name}</strong>
+                ${currentUser.isAdmin ? ' (관리자)' : ''}
+            `;
+            document.getElementById('userInfo').innerHTML = userInfo;
+        }
+
+        // 투표 로드
+        async function loadVotes() {
+            try {
+                const { data: votes } = await supabase
+                    .from('votes')
+                    .select('*')
+                    .eq('is_completed', false)
+                    .order('created_at', { ascending: false });
+
+                const votesList = document.getElementById('votesList');
+                if (!votes || votes.length === 0) {
+                    votesList.innerHTML = '<p>진행중인 투표가 없습니다.</p>';
+                    return;
+                }
+
+                votesList.innerHTML = votes.map(vote => `
+                    <div class="vote-item">
+                        <h3>${vote.title}</h3>
+                        <p><strong>${vote.type === 'meal' ? '급식투표' : '음악방송투표'}</strong></p>
+                        <div class="vote-options" id="options_${vote.id}">
+                            ${vote.options.map((option, idx) => 
+                                `<div class="vote-option" onclick="selectOption(${vote.id}, ${idx})">${option}</div>`
+                            ).join('')}
+                        </div>
+                        <button class="btn btn-small" onclick="vote(${vote.id})" style="margin-top: 15px;">투표하기</button>
+                        ${currentUser.isAdmin ? `<button class="btn btn-danger btn-small" onclick="deleteVote(${vote.id})" style="margin-top: 15px; margin-left: 10px;">삭제</button>` : ''}
+                        ${currentUser.isAdmin ? `<button class="btn btn-small" onclick="completeVote(${vote.id})" style="margin-top: 15px; margin-left: 10px;">투표 완료</button>` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('투표 로드 실패:', error);
             }
-            
-            // P2P 환경에서는 보안 로직이 중요합니다.
-            // 여기서는 currentUserIsHost 변수를 사용해 UI에서 삭제 버튼을 제어하지만,
-            // 실제 데이터 삭제 권한은 Gun.js의 'owner' 개념과 연동하는 것이 좋습니다.
-            // 기본 Gun.js에서는 본인이 생성한 데이터만 삭제 가능하도록 되어 있습니다.
-            // 관리자가 타인의 댓글을 삭제하려면, Gun.js 'ACL' (Access Control List) 또는
-            // 'trust chain'과 같은 더 심화된 개념이 필요합니다.
-            // 여기서는 일단 'currentUserIsHost'가 true이면 삭제를 시도하도록 합니다.
-            // (주의: 이는 클라이언트 측 검증에 가까우며, 숙련된 사용자는 우회할 수 있습니다.)
-            if (!currentUserIsHost) {
-                alert('관리자만 댓글을 삭제할 수 있습니다.');
-                return;
+        }
+
+        // 완료된 투표 결과 로드
+        async function loadCompletedVotes() {
+            try {
+                const { data: votes } = await supabase
+                    .from('votes')
+                    .select('*')
+                    .eq('is_completed', true)
+                    .order('completed_at', { ascending: false });
+
+                const completedVotes = document.getElementById('completedVotes');
+                if (!votes || votes.length === 0) {
+                    completedVotes.innerHTML = '<p>완료된 투표가 없습니다.</p>';
+                    return;
+                }
+
+                completedVotes.innerHTML = votes.map(vote => {
+                    const chartId = `chart_${vote.id}`;
+                    return `
+                        <div class="vote-item">
+                            <h3>${vote.title} (완료)</h3>
+                            <p><strong>${vote.type === 'meal' ? '급식투표' : '음악방송투표'}</strong></p>
+                            <canvas id="${chartId}" class="chart-container"></canvas>
+                        </div>
+                    `;
+                }).join('');
+
+                // 차트 그리기
+                votes.forEach(vote => {
+                    setTimeout(() => drawChart(vote), 100);
+                });
+            } catch (error) {
+                console.error('완료된 투표 로드 실패:', error);
             }
-            
-            if (confirm('이 댓글을 정말로 삭제하시겠습니까?')) {
-                // 특정 댓글 ID를 가진 노드를 찾아 null로 설정 (삭제)
-                db.get('comments').get(commentId).put(null, ack => {
-                    if (ack.err) {
-                        alert(`댓글 삭제 실패: ${ack.err}`);
-                        console.error("댓글 삭제 에러:", ack.err);
-                    } else {
-                        console.log('댓글이 성공적으로 삭제되었습니다:', commentId);
+        }
+
+        function drawChart(vote) {
+            const ctx = document.getElementById(`chart_${vote.id}`);
+            if (!ctx) return;
+
+            const results = vote.results || [];
+            const labels = vote.options;
+            const data = labels.map((_, idx) => results.filter(r => r.option === idx).length);
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '투표 수',
+                        data: data,
+                        backgroundColor: '#667eea',
+                        borderColor: '#5a6fd8',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
                     }
-                });
-            }
-        }
-        
-        // --- 댓글 목록 실시간 렌더링 및 자동 삭제 로직 ---
-
-        let allComments = {}; // 모든 댓글 데이터를 저장할 객체
-        const MAX_COMMENTS = 7; // 최대 댓글 개수
-
-        function renderComments() {
-            const sortedComments = Object.values(allComments)
-                                       .filter(comment => comment && comment.timestamp) // 유효하고 timestamp 있는 댓글만 필터
-                                       .sort((a, b) => b.timestamp - a.timestamp); // 최신 댓글부터 정렬 (내림차순)
-
-            commentCountSpan.textContent = sortedComments.length;
-            commentsList.innerHTML = ''; // 기존 목록 비우기
-
-            const commentsToDisplay = sortedComments.slice(0, MAX_COMMENTS); // 최대 7개만 표시
-
-            commentsToDisplay.forEach(comment => {
-                const commentElement = document.createElement('div');
-                commentElement.classList.add('comment');
-                commentElement.setAttribute('data-comment-id', comment.id);
-
-                const profileInitial = comment.author ? comment.author[0] : '?';
-                const deleteButtonHtml = currentUserIsHost 
-                    ? `<button onclick="deleteComment('${comment.id}', '${comment.owner}')">삭제</button>` 
-                    : '';
-
-                commentElement.innerHTML = `
-                    <div class="comment-author">
-                        <span class="profile">${profileInitial}</span>
-                        ${comment.author}
-                    </div>
-                    <p class="comment-text">${comment.content}</p>
-                    <div class="comment-meta">
-                        <span>${new Date(comment.timestamp).toLocaleString()}</span>
-                        <div class="comment-options">${deleteButtonHtml}</div>
-                    </div>
-                `;
-                commentsList.appendChild(commentElement);
-            });
-
-            // 7개를 초과하는 오래된 댓글 자동 삭제 로직 (Gun.js)
-            // 주의: 이 로직은 각 클라이언트에서 개별적으로 실행되며,
-            // P2P 환경에서 모든 노드가 완벽히 동기화되기까지 시간이 걸릴 수 있습니다.
-            // 더 강력한 중앙 관리 (예: 신뢰할 수 있는 릴레이 서버) 없이는 '확실한' 삭제를 보장하기 어려울 수 있습니다.
-            if (sortedComments.length > MAX_COMMENTS) {
-                const commentsToDelete = sortedComments.slice(MAX_COMMENTS); // 7개를 초과하는 오래된 댓글
-                commentsToDelete.forEach(comment => {
-                    console.log(`오래된 댓글 자동 삭제 시도: ${comment.id}`);
-                    db.get('comments').get(comment.id).put(null, ack => {
-                        if (ack.err) {
-                            console.error(`자동 삭제 실패 (${comment.id}): ${ack.err}`);
-                        } else {
-                            console.log(`자동 삭제 성공 (${comment.id})`);
-                        }
-                    });
-                });
-            }
-        }
-
-        // Gun.js를 통해 'comments' 노드의 모든 변경 사항 실시간으로 감지
-        db.get('comments').map().on((comment, id) => {
-            if (comment) { // 댓글이 존재하면 추가/업데이트
-                allComments[id] = comment;
-            } else { // 댓글이 null로 설정되면 (삭제되면) allComments에서 제거
-                delete allComments[id];
-            }
-            renderComments(); // 변경된 데이터를 기반으로 댓글 목록 다시 그리기
-        });
-
-        // --- 기타 UI 업데이트 함수 ---
-
-        // 로그인 상태에 따라 댓글 관련 섹션의 가시성을 업데이트 (예: 관리자 삭제 버튼)
-        function updateCommentSectionVisibility() {
-            const commentElements = commentsList.querySelectorAll('.comment');
-            commentElements.forEach(commentEl => {
-                const deleteButton = commentEl.querySelector('.comment-options button');
-                if (deleteButton) {
-                    deleteButton.style.display = currentUserIsHost ? 'inline-block' : 'none';
                 }
             });
+        }
 
-            // 작성자 입력창에 현재 로그인 사용자 이름 자동 채우기 (로그인 시)
-            if (user.is && user.is.alias) {
-                commentAuthorInput.value = user.is.alias;
-                commentAuthorInput.readOnly = true; // 로그인 시 작성자 이름 수정 불가
-            } else {
-                commentAuthorInput.value = '';
-                commentAuthorInput.readOnly = false;
+        // 투표 선택
+        function selectOption(voteId, optionIdx) {
+            const options = document.querySelectorAll(`#options_${voteId} .vote-option`);
+            options.forEach((opt, idx) => {
+                opt.classList.toggle('selected', idx === optionIdx);
+            });
+        }
+
+        // 투표하기
+        async function vote(voteId) {
+            const selectedOption = document.querySelector(`#options_${voteId} .vote-option.selected`);
+            if (!selectedOption) {
+                alert('선택지를 선택해주세요.');
+                return;
+            }
+
+            const optionIdx = Array.from(selectedOption.parentNode.children).indexOf(selectedOption);
+
+            try {
+                // 중복 투표 확인
+                const { data: existingVote } = await supabase
+                    .from('vote_results')
+                    .select('*')
+                    .eq('vote_id', voteId)
+                    .eq('user_id', currentUser.id);
+
+                if (existingVote && existingVote.length > 0) {
+                    alert('이미 투표하셨습니다.');
+                    return;
+                }
+
+                // 투표 저장
+                const { error } = await supabase
+                    .from('vote_results')
+                    .insert({
+                        vote_id: voteId,
+                        user_id: currentUser.id,
+                        user_name: currentUser.name,
+                        option: optionIdx
+                    });
+
+                if (error) throw error;
+
+                alert('투표가 완료되었습니다!');
+                selectedOption.classList.remove('selected');
+            } catch (error) {
+                console.error('투표 실패:', error);
+                alert('투표 중 오류가 발생했습니다.');
             }
         }
 
-        // 초기 로드 시 댓글 목록 렌더링 및 UI 업데이트
-        renderComments(); // 초기화 시 한 번 호출
-        updateCommentSectionVisibility(); // 초기화 시 로그인 상태 반영
+        // 투표 생성 모달
+        function openVoteCreateModal() {
+            document.getElementById('voteCreateModal').style.display = 'flex';
+        }
+
+        async function createVote() {
+            const type = document.getElementById('voteType').value;
+            const title = document.getElementById('voteTitle').value.trim();
+            const optionsText = document.getElementById('voteOptions').value.trim();
+
+            if (!title || !optionsText) {
+                document.getElementById('createVoteError').textContent = '제목과 선택지를 입력해주세요.';
+                return;
+            }
+
+            if (containsBadWords(title + optionsText)) {
+                document.getElementById('createVoteError').textContent = '부적절한 내용이 포함되어 있습니다.';
+                return;
+            }
+
+            const options = optionsText.split('\n').filter(opt => opt.trim());
+            if (options.length < 2) {
+                document.getElementById('createVoteError').textContent = '최소 2개의 선택지가 필요합니다.';
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('votes')
+                    .insert({
+                        type: type,
+                        title: title,
+                        options: options,
+                        created_by: currentUser.id,
+                        is_completed: false
+                    });
+
+                if (error) throw error;
+
+                closeModal('voteCreateModal');
+                document.getElementById('voteTitle').value = '';
+                document.getElementById('voteOptions').value = '';
+                document.getElementById('createVoteError').textContent = '';
+                loadVotes();
+                alert('투표가 생성되었습니다!');
+            } catch (error) {
+                console.error('투표 생성 실패:', error);
+                document.getElementById('createVoteError').textContent = '투표 생성 중 오류가 발생했습니다.';
+            }
+        }
+
+        // 투표 삭제
+        async function deleteVote(voteId) {
+            if (!confirm('정말로 이 투표를 삭제하시겠습니까?')) return;
+
+            try {
+                await supabase.from('vote_results').delete().eq('vote_id', voteId);
+                await supabase.from('votes').delete().eq('id', voteId);
+                loadVotes();
+                loadCompletedVotes();
+                alert('투표가 삭제되었습니다.');
+            } catch (error) {
+                console.error('투표 삭제 실패:', error);
+                alert('삭제 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 투표 완료
+        async function completeVote(voteId) {
+            if (!confirm('이 투표를 완료하시겠습니까?')) return;
+
+            try {
+                const { data: results } = await supabase
+                    .from('vote_results')
+                    .select('*')
+                    .eq('vote_id', voteId);
+
+                await supabase
+                    .from('votes')
+                    .update({ 
+                        is_completed: true, 
+                        completed_at: new Date().toISOString(),
+                        results: results 
+                    })
+                    .eq('id', voteId);
+
+                loadVotes();
+                loadCompletedVotes();
+                alert('투표가 완료되었습니다.');
+            } catch (error) {
+                console.error('투표 완료 실패:', error);
+                alert('완료 처리 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 건의사항
+        function openSuggestionModal() {
+            document.getElementById('suggestionModal').style.display = 'flex';
+        }
+
+        function selectProfile(color) {
+            selectedProfileColor = color;
+            document.getElementById('selectedProfile').value = color;
+            
+            // 선택된 프로필 표시
+            document.querySelectorAll('.profile-circle').forEach(circle => {
+                circle.style.border = circle.style.backgroundColor === color ? '3px solid #333' : 'none';
+            });
+        }
+
+        async function submitSuggestion() {
+            const content = document.getElementById('suggestionContent').value.trim();
+            
+            if (!content) {
+                document.getElementById('suggestionError').textContent = '내용을 입력해주세요.';
+                return;
+            }
+
+            if (containsBadWords(content)) {
+                document.getElementById('suggestionError').textContent = '부적절한 내용이 포함되어 있습니다.';
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('suggestions')
+                    .insert({
+                        user_id: currentUser.id,
+                        user_name: currentUser.name,
+                        user_grade: currentUser.grade,
+                        user_class: currentUser.class,
+                        content: content,
+                        profile_color: selectedProfileColor
+                    });
+
+                if (error) throw error;
+
+                closeModal('suggestionModal');
+                document.getElementById('suggestionContent').value = '';
+                document.getElementById('suggestionError').textContent = '';
+                alert('건의사항이 제출되었습니다!');
+            } catch (error) {
+                console.error('건의사항 제출 실패:', error);
+                document.getElementById('suggestionError').textContent = '제출 중 오류가 발생했습니다.';
+            }
+        }
+
+        // 건의사항 관리
+        async function viewSuggestions() {
+            try {
+                const { data: suggestions } = await supabase
+                    .from('suggestions')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                const suggestionsList = document.getElementById('suggestionsList');
+                if (!suggestions || suggestions.length === 0) {
+                    suggestionsList.innerHTML = '<p>건의사항이 없습니다.</p>';
+                } else {
+                    suggestionsList.innerHTML = suggestions.map(suggestion => `
+                        <div class="suggestion-item">
+                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                <div class="profile-circle" style="background: ${suggestion.profile_color};">
+                                    ${suggestion.user_name[0]}
+                                </div>
+                                <div>
+                                    <strong>${suggestion.user_grade}학년 ${suggestion.user_class}반 ${suggestion.user_name}</strong>
+                                    <br><small>${new Date(suggestion.created_at).toLocaleString()}</small>
+                                </div>
+                                <button class="btn btn-danger btn-small" onclick="deleteSuggestion(${suggestion.id})" style="margin-left: auto;">삭제</button>
+                            </div>
+                            <p>${suggestion.content}</p>
+                        </div>
+                    `).join('');
+                }
+
+                document.getElementById('suggestionsViewModal').style.display = 'flex';
+            } catch (error) {
+                console.error('건의사항 로드 실패:', error);
+            }
+        }
+
+        async function deleteSuggestion(suggestionId) {
+            if (!confirm('이 건의사항을 삭제하시겠습니까?')) return;
+
+            try {
+                await supabase.from('suggestions').delete().eq('id', suggestionId);
+                viewSuggestions(); // 목록 새로고침
+            } catch (error) {
+                console.error('건의사항 삭제 실패:', error);
+                alert('삭제 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 모달 관리
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // 모달 외부 클릭시 닫기
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+
+        // 초기 프로필 색상 설정
+        selectProfile('#3498db');
     </script>
 </body>
 </html>
