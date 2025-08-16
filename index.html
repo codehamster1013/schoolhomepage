@@ -28,7 +28,21 @@
         .vote-item { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 15px 0; position: relative; }
         .vote-item.active { border-color: #667eea; background: #f0f3ff; }
         .vote-item.expired { border-color: #e74c3c; background: #fdf2f2; }
-        .chart-container { width: 100%; height: 300px; margin: 20px 0; }
+        .chart-container { 
+            position: relative; 
+            width: 100%; 
+            height: 300px; 
+            margin: 20px 0;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 10px;
+            background: white;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 280px;
+            width: 100%;
+        }
         .suggestions { position: fixed; top: 20px; right: 20px; z-index: 100; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
@@ -231,6 +245,7 @@
         let currentUser = null;
         let selectedProfileColor = '#3498db';
         let countdownTimers = {};
+        let activeCharts = {}; // 차트 인스턴스 관리
 
         // 욕설 필터링
         const badWords = ['바보', '멍청이', '죽어', '꺼져', '시발', '병신', '개새끼', '씨발'];
@@ -408,6 +423,14 @@
         // 완료된 투표 결과 로드
         async function loadCompletedVotes() {
             try {
+                // 기존 차트 인스턴스 정리
+                Object.values(activeCharts).forEach(chart => {
+                    if (chart && typeof chart.destroy === 'function') {
+                        chart.destroy();
+                    }
+                });
+                activeCharts = {};
+
                 // 완료된 투표만 가져오기
                 const { data: completedVotes, error: completedError } = await supabase
                     .from('votes')
@@ -444,15 +467,19 @@
                                     </div>
                                 ` : ''}
                             </div>
-                            <canvas id="${chartId}" class="chart-container"></canvas>
+                            <div class="chart-container">
+                                <div class="chart-wrapper">
+                                    <canvas id="${chartId}"></canvas>
+                                </div>
+                            </div>
                         </div>
                     `;
                 }).join('');
 
                 // 차트 그리기
-                completedVotes.forEach(vote => {
-                    setTimeout(() => drawChart(vote), 100);
-                });
+                setTimeout(() => {
+                    completedVotes.forEach(vote => drawChart(vote));
+                }, 100);
             } catch (error) {
                 console.error('완료된 투표 로드 실패:', error);
                 const completedVotesDiv = document.getElementById('completedVotes');
@@ -475,34 +502,73 @@
                 const data = labels.map((_, idx) => results ? results.filter(r => r.option === idx).length : 0);
                 const totalVotes = data.reduce((sum, count) => sum + count, 0);
 
-                new Chart(ctx, {
+                // 새 차트 인스턴스 생성
+                activeCharts[vote.id] = new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: labels,
                         datasets: [{
                             label: '투표 수',
                             data: data,
-                            backgroundColor: '#667eea',
-                            borderColor: '#5a6fd8',
-                            borderWidth: 1
+                            backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                            borderColor: '#667eea',
+                            borderWidth: 2,
+                            borderRadius: 6,
+                            borderSkipped: false,
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        scales: {
-                            y: { beginAtZero: true }
-                        },
                         plugins: {
+                            legend: {
+                                display: false
+                            },
                             title: {
                                 display: true,
-                                text: `총 투표 수: ${totalVotes}명`
+                                text: `총 투표 수: ${totalVotes}명`,
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                },
+                                color: '#333'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1,
+                                    color: '#666'
+                                },
+                                grid: {
+                                    color: '#e9ecef'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: '#666',
+                                    maxRotation: 45,
+                                    minRotation: 0
+                                },
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        layout: {
+                            padding: {
+                                top: 10,
+                                bottom: 10,
+                                left: 10,
+                                right: 10
                             }
                         }
                     }
                 });
             } catch (error) {
                 console.error('차트 그리기 실패:', error);
+                ctx.parentElement.innerHTML = `<p style="color: #e74c3c; text-align: center;">차트를 불러오는데 실패했습니다.</p>`;
             }
         }
 
@@ -702,6 +768,12 @@
                 if (countdownTimers[voteId]) {
                     clearInterval(countdownTimers[voteId]);
                     delete countdownTimers[voteId];
+                }
+
+                // 차트 인스턴스 정리
+                if (activeCharts[voteId]) {
+                    activeCharts[voteId].destroy();
+                    delete activeCharts[voteId];
                 }
                 
                 loadVotes();
@@ -959,9 +1031,17 @@
             }
         }
 
-        // 페이지 언로드시 타이머 정리
+        // 페이지 언로드시 정리
         window.addEventListener('beforeunload', () => {
+            // 타이머 정리
             Object.values(countdownTimers).forEach(timer => clearInterval(timer));
+            
+            // 차트 인스턴스 정리
+            Object.values(activeCharts).forEach(chart => {
+                if (chart && typeof chart.destroy === 'function') {
+                    chart.destroy();
+                }
+            });
         });
 
         // 초기 프로필 색상 설정
