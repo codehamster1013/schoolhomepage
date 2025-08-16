@@ -608,17 +608,6 @@
                 return;
             }
 
-            if (!endDate || !endTime) {
-                document.getElementById('createVoteError').textContent = '투표 종료 날짜와 시간을 설정해주세요.';
-                return;
-            }
-
-            const endDateTime = new Date(`${endDate}T${endTime}`);
-            if (endDateTime <= new Date()) {
-                document.getElementById('createVoteError').textContent = '종료 시간은 현재 시간보다 나중이어야 합니다.';
-                return;
-            }
-
             if (containsBadWords(title + optionsText)) {
                 document.getElementById('createVoteError').textContent = '부적절한 내용이 포함되어 있습니다.';
                 return;
@@ -630,19 +619,34 @@
                 return;
             }
 
+            // 투표 생성 데이터 준비
+            const voteData = {
+                type: type,
+                title: title,
+                options: options,
+                created_by: currentUser.id,
+                is_completed: false
+            };
+
+            // 날짜와 시간이 입력된 경우에만 end_time 추가
+            if (endDate && endTime) {
+                const endDateTime = new Date(`${endDate}T${endTime}`);
+                if (endDateTime <= new Date()) {
+                    document.getElementById('createVoteError').textContent = '종료 시간은 현재 시간보다 나중이어야 합니다.';
+                    return;
+                }
+                voteData.end_time = endDateTime.toISOString();
+            }
+
             try {
                 const { error } = await supabase
                     .from('votes')
-                    .insert({
-                        type: type,
-                        title: title,
-                        options: options,
-                        created_by: currentUser.id,
-                        is_completed: false,
-                        end_time: endDateTime.toISOString()
-                    });
+                    .insert(voteData);
 
-                if (error) throw error;
+                if (error) {
+                    console.error('투표 생성 에러:', error);
+                    throw error;
+                }
 
                 closeModal('voteCreateModal');
                 document.getElementById('voteTitle').value = '';
@@ -652,7 +656,7 @@
                 alert('투표가 생성되었습니다!');
             } catch (error) {
                 console.error('투표 생성 실패:', error);
-                document.getElementById('createVoteError').textContent = '투표 생성 중 오류가 발생했습니다.';
+                document.getElementById('createVoteError').textContent = `투표 생성 중 오류가 발생했습니다: ${error.message}`;
             }
         }
 
