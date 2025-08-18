@@ -9,7 +9,10 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: '맑은 고딕', sans-serif; background: #f5f7fa; line-height: 1.6; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .header-left { text-align: left; }
+        .header-right { }
+        .header h1 { margin-bottom: 5px; }
         .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
         .login-card, .main-card { background: white; border-radius: 12px; padding: 30px; margin: 20px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
         .form-group { margin: 15px 0; }
@@ -25,6 +28,8 @@
         .btn-warning { background: #f39c12; }
         .btn-warning:hover { background: #d68910; }
         .btn-small { padding: 8px 16px; font-size: 14px; }
+        .btn-header { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; font-size: 14px; }
+        .btn-header:hover { background: rgba(255,255,255,0.3); transform: none; }
         .vote-item { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 20px; margin: 15px 0; position: relative; }
         .vote-item.active { border-color: #667eea; background: #f0f3ff; }
         .vote-item.expired { border-color: #e74c3c; background: #fdf2f2; }
@@ -43,7 +48,6 @@
             height: 280px;
             width: 100%;
         }
-        .suggestions { position: fixed; top: 20px; right: 20px; z-index: 100; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
         .close { float: right; font-size: 24px; cursor: pointer; color: #999; }
@@ -61,7 +65,8 @@
         .error { color: #e74c3c; font-size: 14px; margin-top: 5px; }
         .success { color: #27ae60; font-size: 14px; margin-top: 5px; }
         .admin-hint { background: #e8f5e8; border: 1px solid #c3e6c3; border-radius: 6px; padding: 10px; margin-top: 10px; font-size: 14px; color: #2d5016; }
-        .public-suggestions { background: white; border-radius: 12px; padding: 20px; margin: 20px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .public-suggestions { background: white; border-radius: 12px; padding: 20px; margin: 20px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.1); position: relative; }
+        .suggestions-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .countdown { background: #667eea; color: white; padding: 10px; border-radius: 6px; margin: 10px 0; text-align: center; font-weight: bold; }
         .expired-badge { background: #e74c3c; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; position: absolute; top: 10px; right: 10px; }
         .time-left { color: #667eea; font-weight: bold; margin: 5px 0; }
@@ -70,8 +75,13 @@
 </head>
 <body>
     <div class="header">
-        <h1>🏫 서울명덕초등학교</h1>
-        <p>학급 투표 및 건의 시스템</p>
+        <div class="header-left">
+            <h1>🏫 서울명덕초등학교</h1>
+            <p>학급 투표 및 건의 시스템</p>
+        </div>
+        <div class="header-right">
+            <button id="loadDataBtn" class="btn btn-header hidden" onclick="loadAllData()">📊 데이터 불러오기</button>
+        </div>
     </div>
 
     <!-- 로그인 화면 -->
@@ -115,11 +125,6 @@
 
     <!-- 메인 화면 -->
     <div id="mainScreen" class="hidden">
-        <div class="suggestions">
-            <button class="btn btn-small" onclick="openSuggestionModal()">💬 건의하기</button>
-            <button class="btn btn-small" onclick="viewAllSuggestions()" style="margin-left: 10px;">📋 건의사항 보기</button>
-        </div>
-
         <div class="container">
             <div id="userInfo" class="user-info"></div>
 
@@ -144,7 +149,10 @@
 
             <!-- 공개 건의사항 -->
             <div class="public-suggestions">
-                <h2>💬 건의사항</h2>
+                <div class="suggestions-header">
+                    <h2>💬 건의사항</h2>
+                    <button class="btn btn-small" onclick="openSuggestionModal()">✍️ 건의하기</button>
+                </div>
                 <div id="publicSuggestionsList"></div>
             </div>
         </div>
@@ -227,15 +235,6 @@
         </div>
     </div>
 
-    <!-- 건의사항 보기 모달 (일반 사용자용) -->
-    <div id="publicSuggestionsModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('publicSuggestionsModal')">&times;</span>
-            <h3>📋 건의사항 보기</h3>
-            <div id="publicSuggestionsModalList"></div>
-        </div>
-    </div>
-
     <script>
         // Supabase 초기화 - 실제 프로젝트에서는 환경변수로 관리하세요
         const SUPABASE_URL = 'https://xyhdojgynscpjxlqnrul.supabase.co';
@@ -284,15 +283,14 @@
 
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('mainScreen').classList.remove('hidden');
+            document.getElementById('loadDataBtn').classList.remove('hidden');
             
             showUserInfo();
             if (isAdmin) {
                 document.getElementById('adminPanel').classList.remove('hidden');
             }
             
-            loadVotes();
-            loadCompletedVotes();
-            loadPublicSuggestions();
+            loadAllData();
         }
 
         function showUserInfo() {
@@ -301,6 +299,13 @@
                 ${currentUser.isAdmin ? ' (관리자)' : ''}
             `;
             document.getElementById('userInfo').innerHTML = userInfo;
+        }
+
+        // 모든 데이터 불러오기
+        function loadAllData() {
+            loadVotes();
+            loadCompletedVotes();
+            loadPublicSuggestions();
         }
 
         // 시간 형식 변환
@@ -916,56 +921,6 @@
                     <p style="text-align: center; color: #e74c3c; padding: 20px;">
                         건의사항을 불러오는데 실패했습니다.<br>
                         <small>오류: ${error.message}</small>
-                    </p>
-                `;
-            }
-        }
-
-        // 건의사항 보기 (일반 사용자용)
-        async function viewAllSuggestions() {
-            // 로딩 표시
-            const suggestionsList = document.getElementById('publicSuggestionsModalList');
-            suggestionsList.innerHTML = '<p>건의사항을 불러오는 중...</p>';
-            
-            // 모달 먼저 표시
-            document.getElementById('publicSuggestionsModal').style.display = 'flex';
-            
-            try {
-                // 데이터베이스에서 모든 건의사항 가져오기
-                const { data: suggestions, error } = await supabase
-                    .from('suggestions')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) {
-                    throw error;
-                }
-
-                if (!suggestions || suggestions.length === 0) {
-                    suggestionsList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">아직 건의사항이 없습니다.</p>';
-                } else {
-                    suggestionsList.innerHTML = suggestions.map(suggestion => `
-                        <div class="suggestion-item">
-                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                                <div class="profile-circle" style="background: ${suggestion.profile_color};">
-                                    ${suggestion.user_name ? suggestion.user_name[0] : '?'}
-                                </div>
-                                <div>
-                                    <strong>${suggestion.user_grade}학년 ${suggestion.user_class}반 ${suggestion.user_name}</strong>
-                                    <br><small>${new Date(suggestion.created_at).toLocaleString('ko-KR')}</small>
-                                </div>
-                            </div>
-                            <p>${suggestion.content}</p>
-                        </div>
-                    `).join('');
-                }
-            } catch (error) {
-                console.error('건의사항 로드 실패:', error);
-                suggestionsList.innerHTML = `
-                    <p style="text-align: center; color: #e74c3c; padding: 20px;">
-                        건의사항을 불러오는데 실패했습니다.<br>
-                        <small>오류: ${error.message}</small><br>
-                        <button class="btn btn-small" onclick="viewAllSuggestions()" style="margin-top: 10px;">다시 시도</button>
                     </p>
                 `;
             }
