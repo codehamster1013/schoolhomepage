@@ -74,7 +74,7 @@
             <p>학급 투표 및 건의 시스템</p>
         </div>
         <div class="header-right">
-            <button id="loadDataBtn" class="btn btn-header hidden" onclick="loadAllData()">🔃새로고침</button>
+            <button id="loadDataBtn" class="btn btn-header hidden" onclick="loadAllData()">🔃</button>
         </div>
     </div>
 
@@ -104,14 +104,11 @@
             </div>
             <div class="form-group">
                 <label>성</label>
-                <input type="text" id="lastName" placeholder="성을 입력하세요" maxlength="10">
+                <input type="text" id="lastName" placeholder="번호를를 입력하세요" maxlength="10">
             </div>
             <div class="form-group">
                 <label>이름</label>
                 <input type="text" id="firstName" placeholder="이름을 입력하세요" maxlength="10">
-            </div>
-            <div class="admin-hint">
-            </div>
             <button class="btn" onclick="login()">입장하기</button>
             <div id="loginError" class="error"></div>
         </div>
@@ -169,9 +166,7 @@
                 <select id="voteType">
                     <option value="meal">급식 투표</option>
                     <option value="music">음악방송 투표</option>
-                    <option value="activity">체험활동 투표</option>
                     <option value="event">학급행사 투표</option>
-                    <option value="other">기타</option>
                 </select>
             </div>
             <div class="form-group">
@@ -233,7 +228,7 @@
         let activeCharts = {}; // 차트 인스턴스 관리
 
         // 욕설 필터링
-        const badWords = ['바보', '멍청이', '죽어', '꺼져', '시발', '병신', '개새끼', '씨발'];
+        const badWords = ['바보', '멍청이', '죽어', '꺼져', '시발', '병신', '개새끼', '씨발','시발', '시발점', '출발','섹션', '섹터'. '지랄병','니애미', '어머니','애미','아버지','애비', '고자','고추'];
         
         function containsBadWords(text) {
             return badWords.some(word => text.toLowerCase().includes(word));
@@ -251,13 +246,13 @@
                 return;
             }
 
-            if (containsBadWords(lastName + firstName)) {
+            if (containsBadWords(firstName)) {
                 document.getElementById('loginError').textContent = '부적절한 이름입니다.';
                 return;
             }
 
-            // 관리자 인증: 성이 "서울"이고 이름이 "명덕초등학교"인 경우
-            const isAdmin = (lastName === '서울' && firstName === '명덕초등학교');
+            // 관리자 인증: 이름이 서울명덕초등학교인 경우
+            const isAdmin = (firstName === '서울명덕초등학교');
 
             currentUser = {
                 grade: parseInt(grade),
