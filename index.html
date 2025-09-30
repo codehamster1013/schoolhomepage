@@ -109,6 +109,7 @@
             <div class="form-group">
                 <label>이름</label>
                 <input type="text" id="firstName" placeholder="이름을 입력하세요" maxlength="10">
+                <label>입장하기</label>
             <button class="btn" onclick="login()">입장하기</button>
             <div id="loginError" class="error"></div>
         </div>
@@ -257,7 +258,7 @@
             currentUser = {
                 grade: parseInt(grade),
                 class: parseInt(classNum),
-                name: lastName + firstName,
+                name: lastName +'번 ' +firstName,
                 isAdmin: isAdmin,
                 id: `${grade}${classNum}_${lastName}${firstName}`
             };
