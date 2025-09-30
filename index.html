@@ -74,6 +74,7 @@
             <p>학급 투표 및 건의 시스템</p>
         </div>
         <div class="header-right">
+            <button class="btn btn-header" onclick="openManualModal()">📖 사용법</button>
             <button id="loadDataBtn" class="btn btn-header hidden" onclick="loadAllData()">🔃</button>
         </div>
     </div>
@@ -235,6 +236,15 @@
         function containsBadWords(text) {
             return badWords.some(word => text.toLowerCase().includes(word));
         }
+        function openManualModal() {
+            const url = "https://schoolhomepageuser.my.canva.site/";  // ← 여기에 Canva 공유 링크를 넣으세요
+            const width = 1000;
+            const height = 800;
+            const left = (window.innerWidth - width) / 2;
+            const top = (window.innerHeight - height) / 2;
+
+      window.open(url, "CanvaPopup", `width=${width},height=${height},left=${left},top=${top},resizable=yes`);
+    }
 
         // 로그인
         async function login() {
